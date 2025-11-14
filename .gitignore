@@ -1,0 +1,149 @@
+# Xcode
+DerivedData/
+build/
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+xcuserdata/
+*.xcscmblueprint
+
+# SwiftPM
+.build/
+Package.resolved
+
+# CocoaPods
+Pods/
+Podfile.lock
+
+# Carthage
+Carthage/Build/
+
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output
+
+# macOS
+.DS_Store
+
+# Firebase/Secrets
+GoogleService-Info.plist
+
+# Other
+*.moved-aside
+*.xcuserstate
+.idea/
+*.swp
+*.swo
+# ============================================
+# 🔐 SECURITY - API KEYS AND SECRETS
+# ============================================
+# These files contain sensitive API keys and must NEVER be committed
+Config.xcconfig
+Secrets.xcconfig
+**/Config.xcconfig
+**/Secrets.xcconfig
+.env
+.env.local
+.env.*.local
+
+# Firebase
+GoogleService-Info.plist
+**/GoogleService-Info.plist
+
+# ============================================
+# Xcode
+# ============================================
+*.xcconfig
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+*.xccheckout
+*.xcworkspace/xcuserdata/
+xcuserdata/
+DerivedData/
+build/
+*.swiftpm/
+.build/
+
+# ============================================
+# macOS
+# ============================================
+.DS_Store
+.AppleDouble
+.LSOverride
+*.swp
+*.swo
+*~
+.Spotlight-V100
+.Trashes
+
+# ============================================
+# CocoaPods
+# ============================================
+Pods/
+*.podspec
+
+# ============================================
+# Carthage
+# ============================================
+Carthage/Build
+
+# ============================================
+# Swift Package Manager
+# ============================================
+.swiftpm/
+.build/
+*.xcframework
+
+# ============================================
+# fastlane
+# ============================================
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots
+fastlane/test_output
+
+# ============================================
+# IDE
+# ============================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ============================================
+# OS
+# ============================================
+Thumbs.db
+.DS_Store
+
+# ============================================
+# Temporary Files
+# ============================================
+*.tmp
+*.temp
+*.log
+*.bak
+*.backup
+
+# Firebase Configuration - SECRETS
+GoogleService-Info.plist
+Newssss/GoogleService-Info.plist
+
+# API Configuration - SECRETS
+Config.xcconfig
+Newssss/Config.xcconfig
+
+# Build artifacts
+.build/
+*.ipa
+*.app
