@@ -6,13 +6,46 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		F5E5E4A62EC507F0004B447E /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = F5E5E4A52EC507F0004B447E /* FirebaseAuth */; };
+		F5E5E4A82EC507F0004B447E /* FirebaseAuthCombine-Community in Frameworks */ = {isa = PBXBuildFile; productRef = F5E5E4A72EC507F0004B447E /* FirebaseAuthCombine-Community */; };
+		F5E5E4AA2EC507F0004B447E /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = F5E5E4A92EC507F0004B447E /* FirebaseCore */; };
+		F5E5E4AD2EC50813004B447E /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = F5E5E4AC2EC50813004B447E /* GoogleSignIn */; };
+		F5E5E4AF2EC50813004B447E /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = F5E5E4AE2EC50813004B447E /* GoogleSignInSwift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		F5E5E5972EC723DD004B447E /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = F528DE692EBC832500ACB532 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = F528DE702EBC832500ACB532;
+			remoteInfo = Newssss;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		F528DE712EBC832500ACB532 /* Newssss.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Newssss.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		F5E5E4B02EC5EFDB004B447E /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
+		F5E5E5932EC723DD004B447E /* InShortsTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = InShortsTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		F5E5ECE02EC84C30004B447E /* Exceptions for "Newssss" folder in "Newssss" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = F528DE702EBC832500ACB532 /* Newssss */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		F528DE732EBC832500ACB532 /* Newssss */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				F5E5ECE02EC84C30004B447E /* Exceptions for "Newssss" folder in "Newssss" target */,
+			);
 			path = Newssss;
 			sourceTree = "<group>";
 		};
@@ -20,6 +53,18 @@
 
 /* Begin PBXFrameworksBuildPhase section */
 		F528DE6E2EBC832500ACB532 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F5E5E4AF2EC50813004B447E /* GoogleSignInSwift in Frameworks */,
+				F5E5E4A62EC507F0004B447E /* FirebaseAuth in Frameworks */,
+				F5E5E4AD2EC50813004B447E /* GoogleSignIn in Frameworks */,
+				F5E5E4AA2EC507F0004B447E /* FirebaseCore in Frameworks */,
+				F5E5E4A82EC507F0004B447E /* FirebaseAuthCombine-Community in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F5E5E5902EC723DD004B447E /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -32,6 +77,7 @@
 		F528DE682EBC832500ACB532 = {
 			isa = PBXGroup;
 			children = (
+				F5E5E4B02EC5EFDB004B447E /* GoogleService-Info.plist */,
 				F528DE732EBC832500ACB532 /* Newssss */,
 				F528DE722EBC832500ACB532 /* Products */,
 			);
@@ -41,6 +87,7 @@
 			isa = PBXGroup;
 			children = (
 				F528DE712EBC832500ACB532 /* Newssss.app */,
+				F5E5E5932EC723DD004B447E /* InShortsTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -65,10 +112,35 @@
 			);
 			name = Newssss;
 			packageProductDependencies = (
+				F5E5E4A52EC507F0004B447E /* FirebaseAuth */,
+				F5E5E4A72EC507F0004B447E /* FirebaseAuthCombine-Community */,
+				F5E5E4A92EC507F0004B447E /* FirebaseCore */,
+				F5E5E4AC2EC50813004B447E /* GoogleSignIn */,
+				F5E5E4AE2EC50813004B447E /* GoogleSignInSwift */,
 			);
 			productName = Newssss;
 			productReference = F528DE712EBC832500ACB532 /* Newssss.app */;
 			productType = "com.apple.product-type.application";
+		};
+		F5E5E5922EC723DD004B447E /* InShortsTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F5E5E5992EC723DD004B447E /* Build configuration list for PBXNativeTarget "InShortsTests" */;
+			buildPhases = (
+				F5E5E58F2EC723DD004B447E /* Sources */,
+				F5E5E5902EC723DD004B447E /* Frameworks */,
+				F5E5E5912EC723DD004B447E /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				F5E5E5982EC723DD004B447E /* PBXTargetDependency */,
+			);
+			name = InShortsTests;
+			packageProductDependencies = (
+			);
+			productName = InShortsTests;
+			productReference = F5E5E5932EC723DD004B447E /* InShortsTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
 		};
 /* End PBXNativeTarget section */
 
@@ -77,11 +149,15 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 2600;
+				LastSwiftUpdateCheck = 2610;
 				LastUpgradeCheck = 2600;
 				TargetAttributes = {
 					F528DE702EBC832500ACB532 = {
 						CreatedOnToolsVersion = 26.0.1;
+					};
+					F5E5E5922EC723DD004B447E = {
+						CreatedOnToolsVersion = 26.1.1;
+						TestTargetID = F528DE702EBC832500ACB532;
 					};
 				};
 			};
@@ -94,18 +170,30 @@
 			);
 			mainGroup = F528DE682EBC832500ACB532;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				F5E5E4A42EC507F0004B447E /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				F5E5E4AB2EC50813004B447E /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = F528DE722EBC832500ACB532 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
 				F528DE702EBC832500ACB532 /* Newssss */,
+				F5E5E5922EC723DD004B447E /* InShortsTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		F528DE6F2EBC832500ACB532 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F5E5E5912EC723DD004B447E /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -122,11 +210,28 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		F5E5E58F2EC723DD004B447E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		F5E5E5982EC723DD004B447E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = F528DE702EBC832500ACB532 /* Newssss */;
+			targetProxy = F5E5E5972EC723DD004B447E /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		F528DE7A2EBC832600ACB532 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReferenceAnchor = F528DE732EBC832500ACB532 /* Newssss */;
+			baseConfigurationReferenceRelativePath = Config.xcconfig;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -191,6 +296,8 @@
 		};
 		F528DE7B2EBC832600ACB532 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReferenceAnchor = F528DE732EBC832500ACB532 /* Newssss */;
+			baseConfigurationReferenceRelativePath = Config.xcconfig;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -206,7 +313,6 @@
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
 				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
-				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
 				CLANG_WARN_EMPTY_BODY = YES;
 				CLANG_WARN_ENUM_CONVERSION = YES;
 				CLANG_WARN_INFINITE_RECURSION = YES;
@@ -251,14 +357,20 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 945AR9TQRH;
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
+				EXCLUDED_SOURCE_FILE_NAMES = Info.plist;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Newssss/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = InShorts;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UIRequiresFullScreen = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -266,7 +378,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.codewithpruthvi.Newssss;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.codewithpruthvi.Newssss;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -283,14 +395,20 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 945AR9TQRH;
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
+				EXCLUDED_SOURCE_FILE_NAMES = Info.plist;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Newssss/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = InShorts;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UIRequiresFullScreen = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -298,7 +416,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.codewithpruthvi.Newssss;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.codewithpruthvi.Newssss;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -307,6 +425,51 @@
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		F5E5E59A2EC723DD004B447E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 945AR9TQRH;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.1;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.codewithpruthvi.InShortsTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Newssss.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Newssss";
+			};
+			name = Debug;
+		};
+		F5E5E59B2EC723DD004B447E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 945AR9TQRH;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.1;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.codewithpruthvi.InShortsTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Newssss.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Newssss";
 			};
 			name = Release;
 		};
@@ -331,7 +494,63 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		F5E5E5992EC723DD004B447E /* Build configuration list for PBXNativeTarget "InShortsTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F5E5E59A2EC723DD004B447E /* Debug */,
+				F5E5E59B2EC723DD004B447E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		F5E5E4A42EC507F0004B447E /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.5.0;
+			};
+		};
+		F5E5E4AB2EC50813004B447E /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/google/GoogleSignIn-iOS";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 9.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		F5E5E4A52EC507F0004B447E /* FirebaseAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F5E5E4A42EC507F0004B447E /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAuth;
+		};
+		F5E5E4A72EC507F0004B447E /* FirebaseAuthCombine-Community */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F5E5E4A42EC507F0004B447E /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = "FirebaseAuthCombine-Community";
+		};
+		F5E5E4A92EC507F0004B447E /* FirebaseCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F5E5E4A42EC507F0004B447E /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCore;
+		};
+		F5E5E4AC2EC50813004B447E /* GoogleSignIn */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F5E5E4AB2EC50813004B447E /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignIn;
+		};
+		F5E5E4AE2EC50813004B447E /* GoogleSignInSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F5E5E4AB2EC50813004B447E /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignInSwift;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = F528DE692EBC832500ACB532 /* Project object */;
 }

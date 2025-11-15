@@ -1,0 +1,71 @@
+	<?xml version="1.0" encoding="UTF-8"?>
+	<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+	<plist version="1.0">
+	<dict>
+		<!-- API keys are injected at build time via Config.xcconfig. Keep only placeholder references here. -->
+		<key>GNEWS_API_KEYS</key>
+		<string>$(GNEWS_API_KEYS)</string>
+		<key>NEWSDATAHUB_API_KEYS</key>
+		<string>$(NEWSDATAHUB_API_KEYS)</string>
+		<key>NEWSDATA_IO_KEYS</key>
+		<string>$(NEWSDATA_IO_KEYS)</string>
+		<key>NEWS_API_KEYS</key>
+		<string>$(NEWS_API_KEYS)</string>
+		<key>RAPIDAPI_KEYS</key>
+		<string>$(RAPIDAPI_KEYS)</string>
+	<key>CFBundleDisplayName</key>
+	<string>InShorts</string>
+	<key>CFBundleName</key>
+	<string>InShorts</string>
+	<key>AppSupportURL</key>
+	<string>https://github.com/yourusername/newsshorts</string>
+	<key>CFBundleExecutable</key>
+	<string>Newssss</string>
+	<key>CFBundleIdentifier</key>
+	<string>dev.codewithpruthvi.Newssss</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.762941052193-p8vdnul8if5bs7j47623f322a0vg24k8</string>
+			</array>
+		</dict>
+	</array>
+	<key>NSPrivacyPolicyURL</key>
+	<string>https://github.com/yourusername/newsshorts/privacy</string>
+	<key>UIStatusBarStyle</key>
+	<string>UIStatusBarStyleLightContent</string>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+	</array>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+	</array>
+	<key>UILaunchStoryboardName</key>
+	<string>LaunchScreen</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSExceptionDomains</key>
+		<dict>
+			<key>gedistatic.it</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+				<key>NSIncludesSubdomains</key>
+				<true/>
+			</dict>
+		</dict>
+	</dict>
+</dict>
+</plist>

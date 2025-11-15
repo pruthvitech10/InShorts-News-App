@@ -1,0 +1,23 @@
+// Configuration file for API keys - EXAMPLE TEMPLATE
+// Copy this file to Config.xcconfig and add your real API keys
+// Config.xcconfig is gitignored and will never be committed
+
+// GNews API Keys (comma-separated for rotation)
+// Get your free API key at: https://gnews.io/
+GNEWS_API_KEYS = your_gnews_api_key_here
+
+// NewsData.io API Keys
+// Get your free API key at: https://newsdata.io/register
+NEWSDATA_IO_KEYS = your_newsdata_io_key_here
+
+// NewsAPI.org API Keys
+// Get your free API key at: https://newsapi.org/register
+NEWS_API_KEYS = your_newsapi_org_key_here
+
+// RapidAPI Keys
+// Get your free API key at: https://rapidapi.com/hub
+RAPIDAPI_KEYS = your_rapidapi_key_here
+
+// NewsDataHub API Keys
+// Get your free API key at: https://newsdatahub.com/dashboards
+NEWSDATAHUB_API_KEYS = your_newsdatahub_key_here
