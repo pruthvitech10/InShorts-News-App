@@ -9,7 +9,7 @@ import SwiftUI
 import Combine
 
 
-// MARK: - FeedType
+// Types of feeds available
 
 enum FeedType {
     case myFeed
@@ -45,7 +45,7 @@ enum FeedType {
     }
 }
 
-// MARK: - CategoryFeedView
+// CategoryFeedView
 
 @available(iOS 26.0, *)
 struct CategoryFeedView: View {
@@ -142,7 +142,7 @@ struct CategoryFeedView: View {
     }
 }
 
-// MARK: - CategoryFeedViewModel
+// View model for category feed
 
 @available(iOS 26.0, *)
 @MainActor
@@ -152,20 +152,12 @@ class CategoryFeedViewModel: ObservableObject {
     @Published var errorMessage: String?
 
     private let aggregatorService = NewsAggregatorService.shared
-    private let cache = NewsCache.shared
 
     func loadArticles(for feedType: FeedType) async {
         isLoading = true
-    errorMessage = nil
-
-    // Check cache
-    let cacheKey = "category_feed_\(feedType.title)_1"
-    if let cachedArticles = await cache.get(forKey: cacheKey) {
-        articles = cachedArticles
-        isLoading = false
-        ErrorLogger.logInfo("Cache hit: \(articles.count) articles for \(feedType.title)")
-        return
-    }
+        errorMessage = nil
+        
+        // No cache - always fresh!
     
     do {
         let fetchedEnhancedArticles: [EnhancedArticle]
@@ -202,9 +194,6 @@ class CategoryFeedViewModel: ObservableObject {
             let fetchedArticles = fetchedEnhancedArticles.map { $0.article }
             articles = fetchedArticles
 
-            // Cache the results
-            await cache.set(articles: fetchedArticles, forKey: cacheKey)
-
             ErrorLogger.logInfo("Loaded \(articles.count) articles for \(feedType.title)")
         } catch {
             errorMessage = error.localizedDescription
@@ -215,7 +204,7 @@ class CategoryFeedViewModel: ObservableObject {
     }
 }
 
-// MARK: - CategoryFeedView_Previews
+// Preview
 
 @available(iOS 26.0, *)
 struct CategoryFeedView_Previews: PreviewProvider {

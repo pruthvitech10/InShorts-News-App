@@ -8,7 +8,7 @@
 import Foundation
 
 
-// MARK: - EnhancedArticle
+// EnhancedArticle
 
 struct EnhancedArticle: Identifiable, Codable {
     let id: UUID
@@ -32,7 +32,7 @@ struct EnhancedArticle: Identifiable, Codable {
     }
 }
 
-// MARK: - SourceType
+// SourceType
 
 enum SourceType: String, Codable {
     case cnn = "CNN"

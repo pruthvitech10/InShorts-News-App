@@ -8,10 +8,8 @@
 
 import SwiftUI
 
-// MARK: - LocalizedText View
-
-/// A SwiftUI view that displays localized text
-/// Automatically updates when the app language changes
+// SwiftUI view for localized text
+// Updates automatically when language changes
 struct LocalizedText: View {
     let key: String
     let arguments: [CVarArg]
@@ -33,7 +31,7 @@ struct LocalizedText: View {
     }
 }
 
-// MARK: - String Extension
+// String localization helpers
 
 extension String {
     /// Returns a localized version of this string key
@@ -50,7 +48,7 @@ extension String {
     }
 }
 
-// MARK: - View Extensions
+// View localization helpers
 
 extension View {
     /// Creates a Text view with localized content
@@ -63,7 +61,7 @@ extension View {
     }
 }
 
-// MARK: - Text Extensions
+// Text localization helpers
 
 extension Text {
     /// Creates a Text view with a localized string
@@ -91,7 +89,7 @@ extension Text {
     }
 }
 
-// MARK: - Private Helpers
+// Internal helpers
 
 private struct LocalizedTextModifier: ViewModifier {
     let key: String
@@ -109,7 +107,7 @@ private struct LocalizedTextModifier: ViewModifier {
     }
 }
 
-// MARK: - Convenience Modifiers
+// Convenience methods
 
 extension View {
     /// Sets localized placeholder text for TextField
@@ -132,7 +130,7 @@ private struct LocalizedPlaceholderModifier: ViewModifier {
     }
 }
 
-// MARK: - LocalizedStringKey Extension
+// LocalizedStringKey helpers
 
 extension LocalizedStringKey {
     /// Creates a LocalizedStringKey from a custom localization key
@@ -142,7 +140,7 @@ extension LocalizedStringKey {
     }
 }
 
-// MARK: - Common UI Components with Localization
+// Common localized UI components
 
 extension LocalizedText {
     // Commonly used localized texts as static constructors
@@ -180,7 +178,7 @@ extension LocalizedText {
     }
 }
 
-// MARK: - Preview Helper
+// Preview helpers
 
 #if DEBUG
 extension LocalizationManager {

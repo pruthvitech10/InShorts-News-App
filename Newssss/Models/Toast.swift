@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-// MARK: - Toast
+// Toast
 
 public struct Toast: Equatable {
     var style: ToastStyle
@@ -16,7 +16,7 @@ public struct Toast: Equatable {
     var isUserInteractionEnabled: Bool = false
 }
 
-// MARK: - ToastStyle
+// ToastStyle
 
 public enum ToastStyle {
     case error

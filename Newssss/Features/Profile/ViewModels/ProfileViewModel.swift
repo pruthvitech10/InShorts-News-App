@@ -7,7 +7,7 @@ import Foundation
 import Combine
 
 
-// MARK: - ProfileViewModel
+// Profile screen view model
 
 @MainActor
 final class ProfileViewModel: ObservableObject {
@@ -56,7 +56,7 @@ final class ProfileViewModel: ObservableObject {
     }
 }
 
-// MARK: - AuthProvider
+// Authentication providers
 
 enum AuthProvider {
     case google, anonymous

@@ -9,7 +9,7 @@ import SwiftUI
 import Combine
 
 
-// MARK: - LanguageSettingsView
+// LanguageSettingsView
 
 struct LanguageSettingsView: View {
     @Environment(\.dismiss) private var dismiss
@@ -25,7 +25,7 @@ struct LanguageSettingsView: View {
         .navigationBarTitleDisplayMode(.inline)
     }
     
-    // MARK: - Current Language Section
+    // Current Language Section
     
     private var currentLanguageSection: some View {
         Section {
@@ -53,7 +53,7 @@ struct LanguageSettingsView: View {
         }
     }
     
-    // MARK: - Available Languages Section
+    // Available Languages Section
     
     private var availableLanguagesSection: some View {
         Section {
@@ -96,7 +96,7 @@ struct LanguageSettingsView: View {
     }
 }
 
-// MARK: - LanguageSettingsViewModel
+// LanguageSettingsViewModel
 
 @MainActor
 final class LanguageSettingsViewModel: ObservableObject {
@@ -117,7 +117,7 @@ final class LanguageSettingsViewModel: ObservableObject {
     }
 }
 
-// MARK: - AppLanguage
+// AppLanguage
 
 enum AppLanguage: String, CaseIterable, Codable {
     case english = "en"
@@ -169,7 +169,7 @@ enum AppLanguage: String, CaseIterable, Codable {
     }
 }
 
-// MARK: - Preview
+// Preview
 
 #Preview {
     NavigationStack {

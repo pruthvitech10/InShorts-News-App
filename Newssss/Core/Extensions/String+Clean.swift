@@ -7,7 +7,7 @@
 
 import Foundation
 
-// MARK: - HTML Cleaning
+// Remove HTML tags and entities
 
 extension String {
     /// Removes HTML tags and decodes HTML entities
@@ -104,7 +104,7 @@ extension String {
     }
 }
 
-// MARK: - Text Truncation
+// Truncate text
 
 extension String {
     /// Truncates string to specified length
@@ -163,7 +163,7 @@ extension String {
     }
 }
 
-// MARK: - Whitespace Cleaning
+// Clean up whitespace
 
 extension String {
     /// Removes extra whitespace and newlines, keeping single spaces
@@ -192,7 +192,7 @@ extension String {
     }
 }
 
-// MARK: - Special Characters
+// Handle special characters
 
 extension String {
     /// Removes emoji characters
@@ -213,7 +213,7 @@ extension String {
     }
 }
 
-// MARK: - URL Cleaning
+// Remove URLs from text
 
 extension String {
     /// Removes URLs from text
@@ -239,7 +239,7 @@ extension String {
     }
 }
 
-// MARK: - News-Specific Cleaning
+// Clean text for news display
 
 extension String {
     /// Cleans text for news article display
@@ -262,7 +262,7 @@ extension String {
     }
 }
 
-// MARK: - Validation
+// Text validation
 
 extension String {
     /// Checks if string contains only whitespace or is empty
@@ -277,7 +277,7 @@ extension String {
     }
 }
 
-// MARK: - Character Extension for Emoji Detection
+// Emoji detection
 
 private extension Character {
     var isEmoji: Bool {

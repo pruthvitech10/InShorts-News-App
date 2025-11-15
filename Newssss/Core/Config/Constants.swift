@@ -9,10 +9,10 @@
 import Foundation
 import UIKit
 
-// MARK: - Constants
+// Constants
 
 struct Constants {
-    // MARK: - API Keys
+    // API Keys
     
     /// GNews.io (free tier: 100 requests/day, NO credit card required)
     /// 🔗 Get your free API key at: https://gnews.io/
@@ -44,7 +44,7 @@ struct Constants {
         try await APIKeyRotationService.shared.getNewsDataHubKey()
     }
     
-    // MARK: - API Configuration
+    // API Configuration
     
     struct API {
         static let newsAPIBaseURL = "https://newsapi.org/v2"
@@ -67,7 +67,7 @@ struct Constants {
         static let defaultCategory = "general"
     }
     
-    // MARK: - API Strategy
+    // API Strategy
     
     /// Set to `true` to fetch from all configured APIs simultaneously
     static let fetchFromAllAPIs = true
@@ -81,7 +81,7 @@ struct Constants {
         .newsAPI
     ]
     
-    // MARK: - Cache Configuration
+    // Cache Configuration
     
     struct Cache {
         static let expirationTime: TimeInterval = 3600  // 1 hour
@@ -94,7 +94,7 @@ struct Constants {
         static let cacheExpirationTime: TimeInterval = 86400  // 24 hours
     }
     
-    // MARK: - News Freshness
+    // News Freshness
     
     struct Article {
         static let maxAge: TimeInterval = 24 * 60 * 60  // 24 hours
@@ -103,7 +103,7 @@ struct Constants {
         static let minSentenceLength = 20
     }
     
-    // MARK: - UI Configuration
+    // UI Configuration
     
     struct UI {
         static let animationDuration: TimeInterval = 0.3
@@ -116,7 +116,7 @@ struct Constants {
         static let bookmarkCardImageHeight: CGFloat = 80
     }
     
-    // MARK: - Search Configuration
+    // Search Configuration
     
     struct Search {
         static let minQueryLength = 2
@@ -124,7 +124,7 @@ struct Constants {
         static let resultsLimit = 50
     }
     
-    // MARK: - Summarization
+    // Summarization
     
     struct Summarization {
         static let keywordCount = 10
@@ -135,13 +135,13 @@ struct Constants {
     }
 }
 
-// MARK: - NewsAPIProvider
+// NewsAPIProvider
 // NewsAPIProvider enum is defined in AppConfig.swift
 
-// MARK: - API Error Types
+// API Error Types
 // APIError enum is defined in AppConfig.swift
 
-// MARK: - Constants Extensions
+// Constants Extensions
 
 extension Constants {
     /// Check if any API keys are configured

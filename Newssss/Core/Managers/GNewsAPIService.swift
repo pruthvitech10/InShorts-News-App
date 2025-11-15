@@ -9,7 +9,7 @@
 
 import Foundation
 
-// MARK: - GNewsResponse
+// GNewsResponse
 
 // : - GNews Response Models
 struct GNewsResponse: Codable {
@@ -17,7 +17,7 @@ struct GNewsResponse: Codable {
     let articles: [GNewsArticle]
 }
 
-// MARK: - GNewsArticle
+// GNewsArticle
 
 struct GNewsArticle: Codable {
     let title: String
@@ -34,7 +34,7 @@ struct GNewsArticle: Codable {
     }
 }
 
-// MARK: - GNewsAPIService
+// GNewsAPIService
 
 // : - GNews API Service
 class GNewsAPIService {
@@ -220,7 +220,7 @@ extension NewsCategory {
     }
 }
 
-// MARK: - GNewsAPIError
+// GNewsAPIError
 
 // : - GNews Error
 enum GNewsAPIError: Error, LocalizedError {

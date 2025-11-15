@@ -20,7 +20,7 @@ class PersistenceManager {
         return documentsDirectory.appendingPathComponent(filename)
     }
     
-    // MARK: - Save
+    // Save
     func save<T: Codable>(_ object: T, forKey key: String) {
         do {
             let data = try JSONEncoder().encode(object)
@@ -45,7 +45,7 @@ class PersistenceManager {
         }
     }
     
-    // MARK: - Load
+    // Load
     func load<T: Codable>(forKey key: String, as type: T.Type) -> T? {
         guard let data = userDefaults.data(forKey: key) else {
             return nil
@@ -76,13 +76,13 @@ class PersistenceManager {
         }
     }
     
-    // MARK: - Remove
+    // Remove
     func remove(forKey key: String) {
         userDefaults.removeObject(forKey: key)
         Logger.debug("Removed data for key: \(key)", category: .persistence)
     }
     
-    // MARK: - Swipe History
+    // Swipe History
     func saveSwipeHistory(_ articles: [Article]) {
         save(articles, to: "swipe_history.json")
     }

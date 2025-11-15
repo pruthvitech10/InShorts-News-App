@@ -7,7 +7,7 @@
 
 import Foundation
 
-// MARK: - Category
+// Category
 enum NewsCategory: String, CaseIterable, Codable {
     case forYou
     case general

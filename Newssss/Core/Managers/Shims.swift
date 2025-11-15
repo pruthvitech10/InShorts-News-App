@@ -10,7 +10,7 @@ import Foundation
 import SwiftUI
 
 
-// MARK: - AppUser
+// AppUser
 
 // Note: This is now used by FirebaseAuthenticationManager
 
@@ -69,7 +69,7 @@ struct AppUser {
     }
 }
 
-// MARK: - LLMProvider
+// LLMProvider
 enum LLMProvider: String, CaseIterable, Codable {
     case openai
     case anthropic
@@ -86,7 +86,7 @@ enum LLMProvider: String, CaseIterable, Codable {
     }
 }
 
-// MARK: - PopularSource
+// PopularSource
 enum PopularSource: String, CaseIterable, Codable, Hashable {
     case bbc
     case cnn
@@ -107,7 +107,7 @@ enum PopularSource: String, CaseIterable, Codable, Hashable {
     }
 }
 
-// MARK: - LLMService
+// LLMService
 
 actor LLMService {
     static let shared = LLMService()

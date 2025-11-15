@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-// MARK: - Card Styles
+// Card styling
 
 extension View {
     /// Applies a standard card style with shadow and corner radius
@@ -46,7 +46,7 @@ extension View {
     }
 }
 
-// MARK: - Conditional Modifiers
+// Conditional view modifiers
 
 extension View {
     /// Conditionally applies a transform
@@ -84,7 +84,7 @@ extension View {
     }
 }
 
-// MARK: - Loading States
+// Loading overlays
 
 extension View {
     /// Shows a loading overlay
@@ -111,7 +111,7 @@ extension View {
     }
 }
 
-// MARK: - Error Handling
+// Error alerts
 
 extension View {
     /// Shows an error alert
@@ -142,7 +142,7 @@ extension View {
     }
 }
 
-// MARK: - Navigation
+// Navigation helpers
 
 extension View {
     /// Hides the navigation bar
@@ -160,7 +160,7 @@ extension View {
     }
 }
 
-// MARK: - Keyboard
+// Keyboard handling
 
 extension View {
     /// Dismisses keyboard on tap
@@ -194,7 +194,7 @@ extension View {
     }
 }
 
-// MARK: - Animations
+// Animation helpers
 
 extension View {
     /// Applies a spring animation
@@ -208,7 +208,7 @@ extension View {
     }
 }
 
-// MARK: - Empty State
+// Empty state views
 
 extension View {
     /// Shows content or empty state
@@ -226,7 +226,7 @@ extension View {
     }
 }
 
-// MARK: - Redacted (Placeholder)
+// Placeholder/skeleton views
 
 extension View {
     /// Shows redacted placeholder while loading
@@ -237,7 +237,7 @@ extension View {
     }
 }
 
-// MARK: - Haptic Feedback
+// Haptic feedback
 
 extension View {
     /// Adds haptic feedback on tap
@@ -252,7 +252,7 @@ extension View {
     }
 }
 
-// MARK: - Corner Radius
+// Corner radius helpers
 
 extension View {
     /// Applies corner radius to specific corners
@@ -276,7 +276,7 @@ private struct RoundedCornerShape: Shape {
     }
 }
 
-// MARK: - Share
+// Share sheet
 
 extension View {
     /// Presents a share sheet
@@ -287,7 +287,7 @@ extension View {
     }
 }
 
-// MARK: - News-Specific Modifiers
+// News card styling
 
 extension View {
     /// Applies news card styling
@@ -328,5 +328,5 @@ extension View {
     }
 }
 
-// MARK: - Supporting Types
+// Supporting types
 // ShimmerModifier, ShareSheet, and HapticFeedback are defined in their respective files

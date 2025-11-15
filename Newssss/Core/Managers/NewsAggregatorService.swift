@@ -1,7 +1,7 @@
 import Foundation
 import Combine
 
-// MARK: - News Aggregator Service
+// Combines news from multiple APIs into one feed
 class NewsAggregatorService {
     static let shared = NewsAggregatorService()
      
@@ -20,8 +20,7 @@ class NewsAggregatorService {
         loadConfiguration()
     }
      
-    // MARK: - Sequential Search API with Timeout
-    /// Tries each API in order, applying a timeout to each call. Returns first successful result or throws if all fail.
+    // Try each API one by one until we get results (with timeout)
     func fetchFromAPIsSequentiallyWithTimeout(
         category: NewsCategory? = nil,
         timeout: TimeInterval = 3.0
@@ -70,7 +69,7 @@ class NewsAggregatorService {
         }
     }
      
-    // MARK: - Configuration
+    // Settings
     func configure(enabledSources: Set<PopularSource>, autoFetchInterval: TimeInterval) {
         self.enabledSources = enabledSources
         self.autoFetchInterval = autoFetchInterval
@@ -87,7 +86,7 @@ class NewsAggregatorService {
         return autoFetchInterval
     }
      
-    // MARK: - Fetch Aggregated News
+    // Main function to get news from all sources
     func fetchAggregatedNews(category: NewsCategory? = nil, useLocationBased: Bool = true) async throws -> [EnhancedArticle] {
         var allArticles: [Article] = []
          
@@ -132,7 +131,7 @@ class NewsAggregatorService {
         return enhancedArticles
     }
     
-    // MARK: - Filter Articles by Freshness
+    // Only keep recent articles
     private func filterByFreshness(_ articles: [Article]) -> [Article] {
         let now = Date()
         let maxAge = AppConfig.maximumArticleAge // 24 hours
@@ -149,7 +148,7 @@ class NewsAggregatorService {
         return freshArticles
     }
     
-    // MARK: - Fetch from ALL APIs Simultaneously
+    // Fetch from all APIs at once for speed
     private func fetchFromAllAPIsSimultaneously(category: NewsCategory? = nil) async throws -> [Article] {
         Logger.debug("🚀 Fetching from ALL APIs simultaneously...", category: .network)
         
@@ -198,7 +197,7 @@ class NewsAggregatorService {
         return merged
     }
     
-    // MARK: - Remove Duplicates
+    // Remove duplicate articles by URL
     private func removeDuplicates(from articles: [Article]) -> [Article] {
         var seenURLs = Set<String>()
         var uniqueArticles: [Article] = []
@@ -219,7 +218,7 @@ class NewsAggregatorService {
         return uniqueArticles
     }
      
-    // MARK: - Fetch from NewsAPI.org
+    // Get news from NewsAPI
     private func fetchFromNewsAPI(category: NewsCategory? = nil, page: Int = 1, pageSize: Int = 10) async throws -> [Article] {
         var articles: [Article] = []
         if let category = category {
@@ -235,7 +234,7 @@ class NewsAggregatorService {
         return articles
     }
      
-    // MARK: - Fetch Location-Based News
+    // Get news based on user's location
     private func fetchLocationBasedNews(category: NewsCategory? = nil) async throws -> [Article] {
         let locationService = LocationService.shared
         let country = locationService.getNewsCountryCode()
@@ -278,7 +277,7 @@ class NewsAggregatorService {
         return mixedArticles
     }
      
-    // MARK: - Fetch Location News with Automatic Fallback
+    // Try location-based news, fallback to US if it fails
     private func fetchLocationNewsWithFallback(
         category: NewsCategory?,
         country: String?,
@@ -337,27 +336,27 @@ class NewsAggregatorService {
         return [] // Return empty instead of throwing
     }
      
-    // MARK: - Fetch from NewsData.io
+    // Get news from NewsData.io
     private func fetchFromNewsDataIO(category: NewsCategory? = nil) async throws -> [Article] {
         var articles: [Article] = []
          
         if let category = category {
-            articles = try await newsDataIOService.fetchLatestNews(category: category, country: "it", language: "it")
+            articles = try await newsDataIOService.fetchLatestNews(category: category, country: "us", language: "en")
         } else {
             let categories = Array(NewsCategory.allCases.prefix(3))
-            articles = try await newsDataIOService.fetchMultipleCategories(categories: categories, country: "it")
+            articles = try await newsDataIOService.fetchMultipleCategories(categories: categories, country: "us")
         }
          
         Logger.debug("📡 Fetched \(articles.count) articles from NewsData.io", category: .network)
         return articles
     }
      
-    // MARK: - Fetch from RapidAPI
+    // Get news from RapidAPI
     private func fetchFromRapidAPI(category: NewsCategory? = nil) async throws -> [Article] {
         let articles = try await rapidAPIService.fetchLatestNews(
             category: category,
-            country: "it",
-            language: "it",
+            country: "us",
+            language: "en",
             limit: 10
         )
          
@@ -365,12 +364,12 @@ class NewsAggregatorService {
         return articles
     }
      
-    // MARK: - Fetch from NewsDataHub API
+    // Get news from NewsDataHub
     private func fetchFromNewsDataHub(category: NewsCategory? = nil) async throws -> [Article] {
         let articles = try await newsDataHubAPIService.fetchLatestNews(
             category: category,
-            country: "it",
-            language: "it",
+            country: "us",
+            language: "en",
             limit: 10
         )
          
@@ -378,12 +377,12 @@ class NewsAggregatorService {
         return articles
     }
      
-    // MARK: - Fetch from GNews
+    // Get news from GNews
     private func fetchFromGNews(category: NewsCategory? = nil) async throws -> [Article] {
         let articles = try await gNewsAPIService.fetchTopHeadlines(
             category: category,
-            country: "it",
-            language: "it",
+            country: "us",
+            language: "en",
             max: 10
         )
          
@@ -391,7 +390,7 @@ class NewsAggregatorService {
         return articles
     }
      
-    // MARK: - Auto Fetch
+    // Background auto-refresh
     func startAutoFetch(completion: @escaping ([EnhancedArticle]) -> Void) {
         stopAutoFetch()
          
@@ -424,7 +423,7 @@ class NewsAggregatorService {
         }
     }
      
-    // MARK: - Private Methods
+    // Helper functions
     private func filterByEnabledSources(_ articles: [Article]) -> [Article] {
         let enabledSourceIds = enabledSources.map { $0.sourceId }
         return articles.filter { article in

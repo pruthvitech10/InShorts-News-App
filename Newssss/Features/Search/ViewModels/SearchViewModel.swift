@@ -20,9 +20,8 @@ class SearchViewModel: ObservableObject {
     private let gNewsAPIService = GNewsAPIService.shared
     private let newsDataHubAPIService = NewsDataHubAPIService.shared
     private let rapidAPIService = RapidAPIService.shared
-    private let cache = NewsCache.shared
 
-    /// Perform a search across ALL 5 APIs sequentially with early exit
+    // Search across all APIs until we get results
     func search(useCache: Bool = true) async {
         // Validate first
         let (isValid, error) = ValidationUtil.validateSearchQuery(query)
@@ -35,17 +34,8 @@ class SearchViewModel: ObservableObject {
 
         isLoading = true
         errorMessage = nil
-
-        // Try cache first
-        if useCache {
-            let cacheKey = NewsCache.cacheKey(for: trimmed, page: 1)
-            if let cachedResults = await cache.get(forKey: cacheKey) {
-                results = cachedResults
-                isLoading = false
-                Logger.debug("Search returned \(cachedResults.count) cached results for query: \(trimmed)", category: .viewModel)
-                return
-            }
-        }
+        
+        // No cache - always fresh search results!
 
         // Sequential API calls with early exit
         let apiProviders: [(name: String, fetch: () async throws -> [Article])] = [
@@ -91,8 +81,6 @@ class SearchViewModel: ObservableObject {
             errorMessage = successCount == 0
                 ? "Search unavailable. Check connection and try again."
                 : "No recent results found."
-        } else {
-            await cache.set(articles: results, forKey: NewsCache.cacheKey(for: trimmed, page: 1))
         }
     }
 

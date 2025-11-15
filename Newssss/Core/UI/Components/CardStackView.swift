@@ -9,7 +9,7 @@ import SwiftUI
 import UIKit
 
 
-// MARK: - CardStackView
+// CardStackView
 
 @available(iOS 15.0, *)
 struct CardStackView: View {
@@ -80,14 +80,14 @@ struct CardStackView: View {
         // Removed .sheet for article detail to prevent white modal popup on card tap
     }
 
-    // MARK: - Visible slice
+    // Only show a few cards at a time for performance
     private var visibleArticles: [Article] {
         let endIndex = min(currentIndex + maxVisibleCards, articles.count)
         guard currentIndex < endIndex else { return [] }
         return Array(articles[currentIndex..<endIndex])
     }
 
-    // MARK: - Visual helpers
+    // Make cards look stacked
     private func scaleForIndex(_ index: Int) -> CGFloat {
         return 1.0 - (CGFloat(index) * 0.05)
     }
@@ -96,9 +96,9 @@ struct CardStackView: View {
         return CGFloat(index) * 10
     }
 
-    // MARK: - Swipe handlers
+    // Handle left/right swipes
     private func handleSwipeLeft(article: Article) {
-        // Track in history
+        // Only track in history - NO bookmark
         Task { @MainActor in
             SwipeHistoryService.shared.addSwipedArticle(article)
             // Track skip for personalization
@@ -109,23 +109,26 @@ struct CardStackView: View {
         withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
             currentIndex += 1
         }
-        Logger.debug("⬅️ Skipped article: \(article.title)", category: .general)
+        Logger.debug("⬅️ Skipped article", category: .general)
     }
 
     private func handleSwipeRight(article: Article) {
-        // Track in history
+        // Only track in history - NO bookmark
+        // Bookmark only happens when user taps bookmark button
         Task { @MainActor in
             SwipeHistoryService.shared.addSwipedArticle(article)
-            // Track bookmark for personalization (strong positive signal)
-            PersonalizationService.shared.trackBookmark(article)
+            // Track as read (positive signal, but not bookmark)
+            PersonalizationService.shared.trackArticleRead(article, readingTime: 5.0)
         }
         
-        onBookmark?(article)
+        onSkip?(article) // Just move to next card
         withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
             currentIndex += 1
         }
-        Logger.debug("➡️ Bookmarked article: \(article.title)", category: .general)
-    }    // MARK: - Share
+        Logger.debug("➡️ Swiped right (read)", category: .general)
+    }
+    
+    // Share article
     private func shareArticle(_ article: Article) {
         guard let url = URL(string: article.url) else { return }
         let activityVC = UIActivityViewController(activityItems: [url], applicationActivities: nil)
@@ -138,7 +141,7 @@ struct CardStackView: View {
     }
 }
 
-// MARK: - CardStackView_Previews
+// Preview
 
 #Preview {
     CardStackView(

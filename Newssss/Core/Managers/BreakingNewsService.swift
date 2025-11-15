@@ -8,7 +8,7 @@
 import Foundation
 import Combine
 
-// MARK: - BreakingNewsItem
+// Model for breaking news items
 
 struct BreakingNewsItem: Identifiable, Codable, Hashable {
     let id: String
@@ -66,20 +66,20 @@ struct BreakingNewsItem: Identifiable, Codable, Hashable {
     }
 }
 
-// MARK: - BreakingNewsService
+// Manages breaking news from multiple sources
 
 @MainActor
 final class BreakingNewsService: ObservableObject {
     static let shared = BreakingNewsService()
     
-    // MARK: - Published Properties
+    // Observable properties for SwiftUI
     
     @Published private(set) var breakingNews: [BreakingNewsItem] = []
     @Published private(set) var isLoading = false
     @Published private(set) var error: String?
     @Published private(set) var lastUpdateTime: Date?
     
-    // MARK: - Configuration
+    // Configuration settings
     
     private struct Config {
         static let refreshInterval: TimeInterval = 300 // 5 minutes
@@ -87,11 +87,11 @@ final class BreakingNewsService: ObservableObject {
         static let cacheTimeKey = "breaking_cache_timestamp"
         static let cacheDuration: TimeInterval = 300 // 5 minutes
         static let maxItems = 30
-        static let maxArticleAge: TimeInterval = 7 * 24 * 3600 // 7 days (same as main feed)
+        static let maxArticleAge: TimeInterval = 48 * 3600 // 48 hours - same as main feed
         static let itemsPerCategory = 5
     }
     
-    // MARK: - Private Properties
+    // Internal state and services
     
     private var refreshTask: Task<Void, Never>?
     private var cancellables = Set<AnyCancellable>()
@@ -103,7 +103,7 @@ final class BreakingNewsService: ObservableObject {
     private let newsDataHubAPIService = NewsDataHubAPIService.shared
     private let rapidAPIService = RapidAPIService.shared
     
-    // MARK: - Initialization
+    // Setup
     
     private init() {
         // Load cached data immediately
@@ -117,7 +117,7 @@ final class BreakingNewsService: ObservableObject {
         // Timer is automatically invalidated when deallocated
     }
     
-    // MARK: - Public API
+    // Main methods
     
     func fetchBreakingNews(forceRefresh: Bool = false) async {
         // Prevent multiple simultaneous fetches
@@ -164,7 +164,7 @@ final class BreakingNewsService: ObservableObject {
         await fetchBreakingNews(forceRefresh: true)
     }
     
-    // MARK: - Auto Refresh
+    // Background refresh logic
     
     private func startAutoRefresh() {
         stopAutoRefresh()
@@ -188,7 +188,7 @@ final class BreakingNewsService: ObservableObject {
         refreshTask = nil
     }
     
-    // MARK: - Fetching Logic
+    // Fetch from all APIs in parallel
     
     private func fetchFromAllAPIs() async throws -> [BreakingNewsItem] {
         await withTaskGroup(of: Result<[BreakingNewsItem], Error>.self) { group in
@@ -250,8 +250,8 @@ final class BreakingNewsService: ObservableObject {
         case .rapidAPI:
             let articles = try await rapidAPIService.fetchLatestNews(
                 category: nil,
-                country: "it",
-                language: "it",
+                country: "us",
+                language: "en",
                 limit: Config.itemsPerCategory
             )
             allItems = articles.compactMap { convertToBreakingNews(article: $0, category: "general") }
@@ -259,8 +259,8 @@ final class BreakingNewsService: ObservableObject {
         case .newsDataHub:
             let articles = try await newsDataHubAPIService.fetchLatestNews(
                 category: nil,
-                country: "it",
-                language: "it",
+                country: "us",
+                language: "en",
                 limit: Config.itemsPerCategory
             )
             allItems = articles.compactMap { convertToBreakingNews(article: $0, category: "general") }
@@ -269,8 +269,8 @@ final class BreakingNewsService: ObservableObject {
             for category in categories.prefix(2) { // Limit categories for free tier
                 let articles = try await gNewsAPIService.fetchTopHeadlines(
                     category: category,
-                    country: "it",
-                    language: "it",
+                    country: "us",
+                    language: "en",
                     max: Config.itemsPerCategory
                 )
                 let items = articles.compactMap { convertToBreakingNews(article: $0, category: category.rawValue) }
@@ -282,7 +282,7 @@ final class BreakingNewsService: ObservableObject {
                 let articles = try await newsDataIOService.fetchLatestNews(
                     category: category,
                     country: nil,
-                    language: "it"
+                    language: "en"
                 )
                 let items = articles.compactMap { convertToBreakingNews(article: $0, category: category.rawValue) }
                 allItems.append(contentsOf: items)
@@ -306,7 +306,7 @@ final class BreakingNewsService: ObservableObject {
         return allItems
     }
     
-    // MARK: - Processing
+    // Filter and sort breaking news
     
     private func processBreakingNews(_ items: [BreakingNewsItem]) -> [BreakingNewsItem] {
         // 1. Filter by freshness
@@ -355,7 +355,7 @@ final class BreakingNewsService: ObservableObject {
         return unique
     }
     
-    // MARK: - Conversion
+    // Convert Article to BreakingNewsItem
     
     private func convertToBreakingNews(article: Article, category: String) -> BreakingNewsItem? {
         guard let publishedDate = article.publishedDate else {
@@ -410,7 +410,7 @@ final class BreakingNewsService: ObservableObject {
         return .normal
     }
     
-    // MARK: - Caching
+    // Save/load from UserDefaults
     
     private func cacheNews(_ news: [BreakingNewsItem]) {
         Task.detached(priority: .utility) {
@@ -462,7 +462,7 @@ final class BreakingNewsService: ObservableObject {
     }
 }
 
-// MARK: - Statistics
+// Stats for debugging
 
 extension BreakingNewsService {
     struct Statistics {

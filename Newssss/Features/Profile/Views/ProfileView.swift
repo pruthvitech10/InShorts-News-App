@@ -6,7 +6,7 @@
 import SwiftUI
 
 
-// MARK: - ProfileView
+// User profile screen
 
 struct ProfileView: View {
     @EnvironmentObject private var authManager: AuthenticationManager
@@ -32,7 +32,7 @@ struct ProfileView: View {
     }
 }
 
-// MARK: - AuthenticatedView
+// Logged in user view
 
 private struct AuthenticatedView: View {
     let user: AppUser
@@ -152,7 +152,7 @@ private struct AuthenticatedView: View {
     }
 }
 
-// MARK: - StatView
+// Stat display
 
 private struct StatView: View {
     let count: Int
@@ -171,7 +171,7 @@ private struct StatView: View {
     }
 }
 
-// MARK: - SettingsRowContent
+// Settings row
 
 private struct SettingsRowContent: View {
     let icon: String
@@ -228,7 +228,7 @@ private struct SettingsRowContent: View {
 
 
 
-// MARK: - Avatar
+// User avatar
 
 private struct Avatar: View {
     let url: String?
@@ -252,7 +252,7 @@ private struct Avatar: View {
     }
 }
 
-// MARK: - InitialsView
+// User initials
 
 private struct InitialsView: View {
     let initials: String
@@ -267,7 +267,7 @@ private struct InitialsView: View {
     }
 }
 
-// MARK: - UserInterest
+// User interest model
 
 struct UserInterest: Identifiable {
     let id = UUID()
@@ -277,7 +277,7 @@ struct UserInterest: Identifiable {
     let color: Color
 }
 
-// MARK: - TopicData
+// Topic data model
 
 private struct TopicData: Identifiable {
     let id = UUID()
@@ -288,7 +288,7 @@ private struct TopicData: Identifiable {
     let icon: String
 }
 
-// MARK: - SourceData
+// Source data model
 
 private struct SourceData: Identifiable {
     let id = UUID()
@@ -298,7 +298,7 @@ private struct SourceData: Identifiable {
     let color: Color
 }
 
-// MARK: - ReadingStats
+// Reading statistics
 
 private struct ReadingStats {
     var avgReadingTimeMinutes: Double = 0
@@ -308,7 +308,7 @@ private struct ReadingStats {
     var categoryBreakdown: [(String, Int)] = []
 }
 
-// MARK: - Extensions
+// Helper extensions
 
 private extension Binding where Value == String? {
     func isNotNil() -> Binding<Bool> {

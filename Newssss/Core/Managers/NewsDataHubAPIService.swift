@@ -10,7 +10,7 @@
 import Foundation
 
 
-// MARK: - NewsDataHubResponse
+// NewsDataHubResponse
 
 struct NewsDataHubResponse: Codable {
     let status: String
@@ -18,7 +18,7 @@ struct NewsDataHubResponse: Codable {
     let articles: [NewsDataHubArticle]
 }
 
-// MARK: - NewsDataHubArticle
+// NewsDataHubArticle
 
 struct NewsDataHubArticle: Codable {
     let title: String
@@ -35,7 +35,7 @@ struct NewsDataHubArticle: Codable {
     }
 }
 
-// MARK: - NewsDataHubAPIService
+// NewsDataHubAPIService
 
 class NewsDataHubAPIService {
     static let shared = NewsDataHubAPIService()
@@ -45,7 +45,7 @@ class NewsDataHubAPIService {
     
     private init() {}
     
-    // MARK: - Fetch Latest News
+    // Fetch Latest News
     func fetchLatestNews(
         category: NewsCategory? = nil,
         country: String = "it",
@@ -109,7 +109,7 @@ class NewsDataHubAPIService {
         throw NetworkError.rateLimitExceeded
     }
     
-    // MARK: - Search News
+    // Search News
     func searchNews(
         query: String,
         language: String = "en",
@@ -166,7 +166,7 @@ class NewsDataHubAPIService {
         throw NetworkError.rateLimitExceeded
     }
     
-    // MARK: - Convert to Article Model
+    // Convert to Article Model
     private func convertToArticle(_ hubArticle: NewsDataHubArticle) -> Article? {
         // Parse date
         let dateFormatter = ISO8601DateFormatter()
@@ -186,7 +186,7 @@ class NewsDataHubAPIService {
     }
 }
 
-// MARK: - NewsDataHubAPIError
+// NewsDataHubAPIError
 
 enum NewsDataHubAPIError: Error, LocalizedError {
     case missingAPIKey
@@ -205,7 +205,7 @@ enum NewsDataHubAPIError: Error, LocalizedError {
     }
 }
 
-// MARK: - Category Extension for NewsDataHub
+// Category Extension for NewsDataHub
 extension NewsCategory {
     var newsDataHubCategory: String? {
         switch self {

@@ -14,7 +14,7 @@ import GoogleSignIn
 import SwiftUI
 
 
-// MARK: - AuthenticationManager
+// AuthenticationManager
 
 @MainActor
 class AuthenticationManager: ObservableObject {
@@ -48,7 +48,7 @@ class AuthenticationManager: ObservableObject {
         }
     }
     
-    // MARK: - Google Sign-In
+    // Google Sign-In
     
     func signInWithGoogle() async throws {
         isLoading = true
@@ -141,7 +141,7 @@ class AuthenticationManager: ObservableObject {
     }
 }
 
-// MARK: - AuthError
+// AuthError
 
 // : - Auth Errors
 

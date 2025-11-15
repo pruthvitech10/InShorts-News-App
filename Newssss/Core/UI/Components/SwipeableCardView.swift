@@ -39,7 +39,7 @@ struct SwipeableCardView: View {
         GeometryReader { geometry in
             ZStack(alignment: .top) {
                 VStack(spacing: 0) {
-                    // MARK: - Image + Category Badge
+                    // Image + Category Badge
                     ZStack(alignment: .topLeading) {
                         if let imageUrl = article.urlToImage, let url = URL(string: imageUrl) {
                             AsyncImage(url: url) { phase in
@@ -86,19 +86,21 @@ struct SwipeableCardView: View {
                         .padding(16)
                     }
 
-                    // MARK: - Article Info
-                    VStack(alignment: .leading, spacing: 16) {
+                    // Article Info
+                    VStack(alignment: .leading, spacing: 10) {
                         HStack(spacing: 8) {
                             Text(article.source.name)
-                                .font(.subheadline)
+                                .font(.caption)
                                 .fontWeight(.semibold)
+                                .foregroundColor(.primary)
 
                             Text("•")
+                                .font(.caption2)
                                 .foregroundColor(.secondary)
 
                             if let date = article.publishedDate {
                                 Text(date.timeAgoDisplay())
-                                    .font(.subheadline)
+                                    .font(.caption)
                                     .foregroundColor(.secondary)
                             }
 
@@ -111,36 +113,37 @@ struct SwipeableCardView: View {
                                 HapticFeedback.light()
                             }) {
                                 Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
-                                    .font(.title2)
+                                    .font(.title3)
                                     .foregroundColor(isBookmarked ? .yellow : .primary)
-                                    .frame(width: 44, height: 44)
+                                    .frame(width: 40, height: 40)
                                     .background(Color(.systemGray6))
                                     .clipShape(Circle())
                             }
                         }
 
-                        // Title
+                        // Title - Smaller and cleaner
                         Text(isTranslated ? translatedTitle : article.title)
-                            .font(.title2)
+                            .font(.title3)
                             .fontWeight(.bold)
                             .foregroundColor(.primary)
-                            .lineLimit(3)
-                            .fixedSize(horizontal: false, vertical: true)
+                            .lineLimit(2)
+                            .multilineTextAlignment(.leading)
                             .animation(.easeInOut(duration: 0.8), value: isTranslated)
 
-                        // Description
+                        // InShorts Summary - 60-80 words (6-7 lines)
                         if let description = article.description {
-                            Text(isTranslated ? translatedDescription : description)
-                                .font(.body)
+                            let summary = createInShortsSummary(from: description)
+                            Text(isTranslated ? translatedDescription : summary)
+                                .font(.subheadline)
                                 .foregroundColor(.secondary)
-                                .lineLimit(4)
-                                .fixedSize(horizontal: false, vertical: true)
+                                .lineLimit(7)
+                                .multilineTextAlignment(.leading)
                                 .animation(.easeInOut(duration: 0.8), value: isTranslated)
                         }
 
                         Spacer()
 
-                        // MARK: - Action Buttons
+                        // Action Buttons
                         HStack(spacing: 12) {
                             // Translate Button
                             Button(action: {
@@ -194,11 +197,12 @@ struct SwipeableCardView: View {
                             }
                         }
                     }
-                    .padding(20)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 16)
                 }
                 .background(Color(.systemBackground))
-                .cornerRadius(24)
-                .shadow(color: Color.black.opacity(0.1), radius: 20, x: 0, y: 10)
+                .cornerRadius(20)
+                .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
             }
             .frame(width: geometry.size.width, height: geometry.size.height)
         }
@@ -250,7 +254,7 @@ struct SwipeableCardView: View {
         }
     }
 
-    // MARK: - Category Color
+    // Category Color
     private func categoryColor(for category: NewsCategory) -> Color {
         switch category {
         case .forYou: return .teal.opacity(0.9)
@@ -266,7 +270,7 @@ struct SwipeableCardView: View {
         }
     }
     
-    // MARK: - Inline Translation
+    // Inline Translation
     @MainActor
     private func translateArticle() async {
         isTranslating = true
@@ -309,6 +313,45 @@ struct SwipeableCardView: View {
             isTranslating = false
             ErrorLogger.log(error, context: "Translation")
         }
+    }
+    
+    // Creates a nice summary like InShorts does - about 6-7 lines
+    private func createInShortsSummary(from description: String) -> String {
+        let cleaned = description.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        // Break into sentences
+        let sentences = cleaned.components(separatedBy: CharacterSet(charactersIn: ".!?"))
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+        
+        guard !sentences.isEmpty else { return cleaned }
+        
+        // Build summary from first few sentences
+        var summary = ""
+        var wordCount = 0
+        let targetWords = 75 // Aiming for about 75 words
+        
+        for sentence in sentences.prefix(6) {
+            let words = sentence.split(separator: " ")
+            if wordCount + words.count <= targetWords + 20 {
+                summary += sentence + ". "
+                wordCount += words.count
+            } else if wordCount < 50 {
+                // Add this sentence if we're still short
+                summary += sentence + ". "
+                wordCount += words.count
+            } else {
+                break
+            }
+        }
+        
+        // Fallback if summary is too short
+        if wordCount < 40 {
+            let words = cleaned.split(separator: " ").prefix(80)
+            return words.joined(separator: " ") + (words.count >= 80 ? "..." : "")
+        }
+        
+        return summary.trimmingCharacters(in: .whitespaces)
     }
 }
 

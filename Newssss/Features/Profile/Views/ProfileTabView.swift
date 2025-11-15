@@ -24,6 +24,19 @@ struct ProfileTabView: View {
                 ProfileView()
                     .environmentObject(AuthenticationManager.shared)
                     .environmentObject(localizationManager)
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button("Sign Out") {
+                                // Reset to login screen
+                                withAnimation {
+                                    isSignedIn = false
+                                    isGuest = false
+                                }
+                                HapticFeedback.success()
+                            }
+                            .foregroundColor(.red)
+                        }
+                    }
             } else {
                 // Show sign-in options
                 signInView
@@ -122,7 +135,7 @@ struct ProfileTabView: View {
         .padding()
     }
     
-    // MARK: - Actions
+    // Sign in actions
     
     private func signInWithGoogle() {
         isLoading = true
@@ -164,7 +177,7 @@ struct ProfileTabView: View {
     }
 }
 
-// MARK: - Helper Views
+// Helper views
 
 struct FeatureRow: View {
     let icon: String

@@ -8,7 +8,7 @@
 import SwiftUI
 
 
-// MARK: - CategoryHeaderView
+// Category selector at top of feed
 
 struct CategoryHeaderView: View {
     @Binding var selectedCategory: NewsCategory
@@ -42,7 +42,7 @@ struct CategoryHeaderView: View {
     }
 }
 
-// MARK: - CategoryPill
+// Individual category button
 
 struct CategoryPill: View {
     let category: NewsCategory

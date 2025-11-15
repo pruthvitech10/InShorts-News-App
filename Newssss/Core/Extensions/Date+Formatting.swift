@@ -8,9 +8,9 @@
 import Foundation
 
 extension Date {
-    // MARK: - Cached Formatters
+    // Cached formatters for performance
     
-    /// Cached relative date formatter to avoid repeated allocations
+    // Reuse formatter to avoid creating new ones
     private static let relativeFormatter: RelativeDateTimeFormatter = {
         let formatter = RelativeDateTimeFormatter()
         formatter.unitsStyle = .full
@@ -34,9 +34,9 @@ extension Date {
         return formatter
     }
     
-    // MARK: - Relative Time Formatting
+    // Show time like "2 hours ago"
     
-    /// Returns a relative time string (e.g., "2 hours ago")
+    // Returns relative time string
     func timeAgoDisplay() -> String {
         Self.relativeFormatter.localizedString(for: self, relativeTo: Date())
     }
@@ -121,9 +121,9 @@ extension Date {
         return "\(months)mo"
     }
     
-    // MARK: - Standard Date Formatting
+    // Standard date formatting
     
-    /// Returns a formatted date string using cached formatters
+    // Format date using cached formatters
     func formatted(style: DateFormatter.Style = .medium) -> String {
         Self.dateFormatter(style: style).string(from: self)
     }
@@ -144,10 +144,9 @@ extension Date {
         return formatter.string(from: self)
     }
     
-    // MARK: - News-Specific Formatting
+    // Format dates for news articles
     
-    /// Returns a news-appropriate time display
-    /// - For today: "2 hours ago" or "10:30 AM"
+    // Show appropriate time format for news
     /// - For yesterday: "Yesterday"
     /// - For this week: Day name (e.g., "Monday")
     /// - For older: Full date
@@ -178,9 +177,9 @@ extension Date {
         return formatted(style: .medium)
     }
     
-    // MARK: - Utility Methods
+    // Helper methods
     
-    /// Check if the date is fresh (within the configured threshold)
+    // Check if date is recent
     var isFresh: Bool {
         let age = Date().timeIntervalSince(self)
         return age < Constants.Article.preferredAge
@@ -203,7 +202,7 @@ extension Date {
     }
 }
 
-// MARK: - String to Date Parsing
+// Parse date strings
 
 extension Date {
     /// Parse ISO8601 date string (common in news APIs)

@@ -9,14 +9,14 @@
 import Foundation
 
 
-// MARK: - RapidAPINewsResponse
+// RapidAPINewsResponse
 
 struct RapidAPINewsResponse: Codable {
     let status: String?
     let news: [RapidAPIArticle]?
 }
 
-// MARK: - RapidAPIArticle
+// RapidAPIArticle
 
 struct RapidAPIArticle: Codable {
     let title: String
@@ -52,7 +52,7 @@ struct RapidAPIArticle: Codable {
     }
 }
 
-// MARK: - RapidAPIService
+// RapidAPIService
 
 class RapidAPIService {
     static let shared = RapidAPIService()
@@ -62,7 +62,7 @@ class RapidAPIService {
     
     private init() {}
     
-    // MARK: - Fetch Latest News
+    // Fetch Latest News
     /// Fetch latest news from RapidAPI Real-Time News Data
     func fetchLatestNews(
         category: NewsCategory? = nil,
@@ -143,7 +143,7 @@ class RapidAPIService {
         throw NetworkError.rateLimitExceeded
     }
     
-    // MARK: - Search News
+    // Search News
     /// Search news on RapidAPI
     func searchNews(
         query: String,
@@ -223,7 +223,7 @@ class RapidAPIService {
         throw NetworkError.rateLimitExceeded
     }
     
-    // MARK: - Convert to Article
+    // Convert to Article
     private func convertToArticle(_ rapidArticle: RapidAPIArticle, category: NewsCategory?) -> Article? {
         // Validate required fields
         guard !rapidArticle.title.isEmpty else { return nil }
@@ -262,7 +262,7 @@ class RapidAPIService {
     }
 }
 
-// MARK: - RapidAPIError
+// RapidAPIError
 
 enum RapidAPIError: Error, LocalizedError {
     case missingAPIKey
@@ -281,7 +281,7 @@ enum RapidAPIError: Error, LocalizedError {
     }
 }
 
-// MARK: - Category Extension
+// Category Extension
 extension NewsCategory {
     var rapidAPIQuery: String {
         switch self {

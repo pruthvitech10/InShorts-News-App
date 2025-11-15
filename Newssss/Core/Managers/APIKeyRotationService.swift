@@ -7,10 +7,8 @@
 
 import Foundation
 
-// MARK: - API Key Rotation Service
-/// Manages API key rotation and retrieval for multiple news APIs.
-/// This service provides a centralized way to manage API keys and handle rotation
-/// when keys reach their rate limits or expire.
+// Manages API key rotation for all news services
+// Automatically switches keys when rate limits are hit
 ///
 /// ⚠️ SECURITY NOTE:
 /// API keys are stored in Config.xcconfig which is:
@@ -20,7 +18,7 @@ import Foundation
 actor APIKeyRotationService {
     static let shared = APIKeyRotationService()
     
-    // MARK: - State Management
+    // Key storage
     
     private struct KeySet {
         let keys: [String]
@@ -58,7 +56,7 @@ actor APIKeyRotationService {
     
     private init() {}
     
-    // MARK: - Key Loading
+    // Load keys from config
     
     private func loadKeys(forService service: String) -> [String] {
         // Check cache first
@@ -111,7 +109,7 @@ actor APIKeyRotationService {
         }
     }
     
-    // MARK: - Refresh Cache
+    // Refresh key cache
     
     /// Manually refresh the key cache (useful after updating keys)
     func refreshCache() {
@@ -130,7 +128,7 @@ actor APIKeyRotationService {
         #endif
     }
     
-    // MARK: - GNews
+    // GNews keys
     
     func getGNewsKey() async throws -> String {
         ensureKeySet(&gnewsKeySet, service: "GNEWS_API_KEYS", displayName: "GNews")
@@ -146,7 +144,7 @@ actor APIKeyRotationService {
         #endif
     }
     
-    // MARK: - NewsData.io
+    // NewsData.io keys
     
     func getNewsDataIOKey() async throws -> String {
         ensureKeySet(&newsDataIOKeySet, service: "NEWSDATA_IO_KEYS", displayName: "NewsData.io")
@@ -162,7 +160,7 @@ actor APIKeyRotationService {
         #endif
     }
     
-    // MARK: - NewsAPI.org
+    // NewsAPI.org keys
     
     func getNewsAPIKey() async throws -> String {
         ensureKeySet(&newsAPIKeySet, service: "NEWS_API_KEYS", displayName: "NewsAPI.org")
@@ -178,7 +176,7 @@ actor APIKeyRotationService {
         #endif
     }
     
-    // MARK: - NewsDataHub
+    // NewsDataHub keys
     
     func getNewsDataHubAPIKey() async throws -> String {
         ensureKeySet(&newsDataHubKeySet, service: "NEWSDATAHUB_API_KEYS", displayName: "NewsDataHub")
@@ -202,7 +200,7 @@ actor APIKeyRotationService {
         rotateNewsDataHubAPIKey()
     }
     
-    // MARK: - RapidAPI
+    // RapidAPI keys
     
     func getRapidAPIKey() async throws -> String {
         ensureKeySet(&rapidAPIKeySet, service: "RAPIDAPI_KEYS", displayName: "RapidAPI")
@@ -218,7 +216,7 @@ actor APIKeyRotationService {
         #endif
     }
     
-    // MARK: - Bulk Operations
+    // Bulk operations
     
     /// Get all available keys for a specific provider
     func getAvailableKeys(for provider: NewsAPIProvider) async throws -> [String] {
@@ -269,7 +267,7 @@ actor APIKeyRotationService {
         }
     }
     
-    // MARK: - Status Information
+    // Key status info
     
     struct KeyStatus {
         let provider: NewsAPIProvider
@@ -325,7 +323,7 @@ actor APIKeyRotationService {
         }
     }
     
-    // MARK: - Debug Helpers
+    // Debug helpers
     
     #if DEBUG
     func debugKeysInfo() async {
@@ -372,7 +370,7 @@ actor APIKeyRotationService {
     #endif
 }
 
-// MARK: - Usage Helper Extension
+// Helper methods
 
 extension APIKeyRotationService {
     /// Convenience method to handle key rotation on rate limit errors

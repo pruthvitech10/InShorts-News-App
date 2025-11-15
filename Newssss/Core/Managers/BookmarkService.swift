@@ -8,7 +8,7 @@
 import Foundation
 import Combine
 
-// MARK: - Bookmark Error
+// Bookmark error types
 
 enum BookmarkError: LocalizedError {
     case alreadyBookmarked
@@ -33,19 +33,19 @@ enum BookmarkError: LocalizedError {
     }
 }
 
-// MARK: - Bookmark Service
+// Manages saved articles
 
 @MainActor
 final class BookmarkService: ObservableObject {
     static let shared = BookmarkService()
     
-    // MARK: - Published Properties
+    // Observable state
     
     @Published private(set) var bookmarks: [Article] = []
     @Published private(set) var isLoading = false
     @Published private(set) var error: BookmarkError?
     
-    // MARK: - Configuration
+    // Settings
     
     private struct Config {
         static let bookmarksFilename = "bookmarked_articles.json"
@@ -53,7 +53,7 @@ final class BookmarkService: ObservableObject {
         static let autoSaveDelay: TimeInterval = 0.5
     }
     
-    // MARK: - Private Properties
+    // Internal state
     
     private let persistenceManager = PersistenceManager.shared
     private var bookmarkSet: Set<String> = [] // Fast lookup by URL
@@ -63,7 +63,7 @@ final class BookmarkService: ObservableObject {
     // Performance tracking
     private var lastSaveTime: Date?
     
-    // MARK: - Initialization
+    // Setup
     
     private init() {
         Task {
@@ -71,7 +71,7 @@ final class BookmarkService: ObservableObject {
         }
     }
     
-    // MARK: - Public API - Load
+    // Load saved bookmarks
     
     func loadBookmarks() async {
         isLoading = true
@@ -99,7 +99,7 @@ final class BookmarkService: ObservableObject {
         isLoading = false
     }
     
-    // MARK: - Public API - Get
+    // Get bookmarks
     
     /// Get all bookmarks
     func getBookmarks() -> [Article] {
@@ -130,7 +130,7 @@ final class BookmarkService: ObservableObject {
         bookmarks.count >= Config.maxBookmarks
     }
     
-    // MARK: - Public API - Add
+    // Add bookmark
     
     /// Add a bookmark
     /// - Throws: BookmarkError if already bookmarked or limit reached
@@ -163,7 +163,7 @@ final class BookmarkService: ObservableObject {
         Logger.debug("✅ Added bookmark: \(article.title)", category: .persistence)
     }
     
-    // MARK: - Public API - Remove
+    // Remove bookmark
     
     /// Remove a bookmark
     /// - Throws: BookmarkError if not found
@@ -199,7 +199,7 @@ final class BookmarkService: ObservableObject {
         Logger.debug("✅ Removed bookmark: \(article.title)", category: .persistence)
     }
     
-    // MARK: - Public API - Toggle
+    // Toggle bookmark on/off
     
     /// Toggle bookmark status
     /// - Returns: True if bookmarked, false if removed
@@ -220,7 +220,7 @@ final class BookmarkService: ObservableObject {
         }
     }
     
-    // MARK: - Public API - Check
+    // Check if bookmarked
     
     /// Check if article is bookmarked (O(1) lookup)
     func isBookmarked(_ article: Article) -> Bool {
@@ -232,7 +232,7 @@ final class BookmarkService: ObservableObject {
         bookmarkSet.contains(url)
     }
     
-    // MARK: - Public API - Clear
+    // Clear all bookmarks
     
     /// Clear all bookmarks
     func clearAllBookmarks() {
@@ -265,7 +265,7 @@ final class BookmarkService: ObservableObject {
         }
     }
     
-    // MARK: - Public API - Search
+    // Search bookmarks
     
     /// Search bookmarks
     func searchBookmarks(query: String) -> [Article] {
@@ -285,7 +285,7 @@ final class BookmarkService: ObservableObject {
         bookmarks.filter { $0.source.name.lowercased() == source.lowercased() }
     }
     
-    // MARK: - Private Methods - Saving
+    // Save to disk
     
     private func scheduleSave() {
         needsSave = true
@@ -337,7 +337,7 @@ final class BookmarkService: ObservableObject {
         try? await Task.sleep(nanoseconds: 100_000_000) // 0.1s
     }
     
-    // MARK: - Statistics
+    // Get bookmark stats
     
     func getStatistics() -> BookmarkStatistics {
         let sources = Dictionary(grouping: bookmarks, by: { $0.source })
@@ -354,7 +354,7 @@ final class BookmarkService: ObservableObject {
     }
 }
 
-// MARK: - Supporting Types
+// Helper types
 
 enum BookmarkSort {
     case newest
@@ -376,7 +376,7 @@ struct BookmarkStatistics {
     }
 }
 
-// MARK: - Article Extension
+// Article bookmark helpers
 
 extension Article {
     var savedDate: Date? {

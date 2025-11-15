@@ -10,7 +10,7 @@ import LocalAuthentication
 import Combine
 
 
-// MARK: - PrivacySettingsView
+// PrivacySettingsView
 
 struct PrivacySettingsView: View {
     @Environment(\.dismiss) private var dismiss
@@ -33,7 +33,7 @@ struct PrivacySettingsView: View {
         .onChange(of: viewModel.lockBookmarks) { _ in viewModel.saveSettings() }
     }
     
-    // MARK: - Biometric Lock Section
+    // Biometric lock settings
     
     private var biometricLockSection: some View {
         Section {
@@ -76,7 +76,7 @@ struct PrivacySettingsView: View {
         }
     }
     
-    // MARK: - Cache Section
+    // Cache management
     
     private var cacheSection: some View {
         Section {
@@ -106,7 +106,7 @@ struct PrivacySettingsView: View {
     }
 }
 
-// MARK: - PrivacySettingsViewModel
+// Privacy settings view model
 
 @MainActor
 final class PrivacySettingsViewModel: ObservableObject {
@@ -130,13 +130,13 @@ final class PrivacySettingsViewModel: ObservableObject {
         checkBiometricAvailability()
     }
     
-    // MARK: - Initialization
+    // Setup
     
     func checkAuthorizationStatuses() async {
         await calculateCacheSize()
     }
     
-    // MARK: - Biometric Authentication
+    // Biometric Authentication
     
     private func checkBiometricAvailability() {
         var error: NSError?
@@ -183,7 +183,7 @@ final class PrivacySettingsViewModel: ObservableObject {
         }
     }
     
-    // MARK: - Cache Management
+    // Cache Management
     
     func calculateCacheSize() async {
         let fileManager = FileManager.default
@@ -210,11 +210,7 @@ final class PrivacySettingsViewModel: ObservableObject {
     }
     
     func clearCache() {
-        // Clear NewsCache actor (in-memory cache)
-        Task {
-            await NewsCache.shared.clearAll()
-        }
-        
+        // No NewsCache anymore - just clear file cache
         let fileManager = FileManager.default
         
         guard let cacheURL = fileManager.urls(for: .cachesDirectory, in: .userDomainMask).first else { return }
@@ -247,7 +243,7 @@ final class PrivacySettingsViewModel: ObservableObject {
         Logger.debug("📚 Reading history cleared", category: .general)
     }
     
-    // MARK: - Persistence
+    // Persistence
     
     private func loadSettings() {
         biometricLockEnabled = defaults.bool(forKey: "BiometricLockEnabled")
@@ -266,7 +262,7 @@ final class PrivacySettingsViewModel: ObservableObject {
     }
 }
 
-// MARK: - Preview
+// Preview
 
 #Preview {
     NavigationStack {

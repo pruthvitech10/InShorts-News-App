@@ -11,7 +11,7 @@ import SwiftUI
 import Combine
 
 
-// MARK: - LocalizationManager
+// Manages app language and translations
 
 @MainActor
 class LocalizationManager: ObservableObject {
@@ -52,7 +52,7 @@ class LocalizationManager: ObservableObject {
     }
 }
 
-// MARK: - LocalizedStrings
+// Localized strings dictionary
 
 // : - Localized Strings Dictionary
 

@@ -11,7 +11,7 @@ import MessageUI
 import Combine
 
 
-// MARK: - AboutView
+// AboutView
 
 struct AboutView: View {
     @Environment(\.dismiss) private var dismiss
@@ -38,7 +38,7 @@ struct AboutView: View {
         }
     }
     
-    // MARK: - App Info Section
+    // App Info Section
     
     private var appInfoSection: some View {
         Section {
@@ -68,7 +68,7 @@ struct AboutView: View {
         }
     }
     
-    // MARK: - Actions Section
+    // Actions Section
     
     private var actionsSection: some View {
         Section {
@@ -130,7 +130,7 @@ struct AboutView: View {
         }
     }
     
-    // MARK: - Support Section
+    // Support Section
     
     private var supportSection: some View {
         Section {
@@ -150,7 +150,7 @@ struct AboutView: View {
         }
     }
     
-    // MARK: - Developer Section
+    // Developer Section
     
     private var developerSection: some View {
         Section {
@@ -185,7 +185,7 @@ struct AboutView: View {
     }
 }
 
-// MARK: - AboutViewModel
+// AboutViewModel
 
 @MainActor
 final class AboutViewModel: ObservableObject {
@@ -216,7 +216,7 @@ final class AboutViewModel: ObservableObject {
         """
     }
     
-    // MARK: - Actions
+    // Actions
     
     func requestReview() {
         if let scene = UIApplication.shared.connectedScenes.first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene {
@@ -256,7 +256,7 @@ final class AboutViewModel: ObservableObject {
     }
 }
 
-// MARK: - MailComposeView
+// MailComposeView
 
 struct MailComposeView: UIViewControllerRepresentable {
     let recipient: String
@@ -292,7 +292,7 @@ struct MailComposeView: UIViewControllerRepresentable {
     }
 }
 
-// MARK: - ShareSheet
+// ShareSheet
 
 struct ShareSheet: UIViewControllerRepresentable {
     let items: [Any]
@@ -304,7 +304,7 @@ struct ShareSheet: UIViewControllerRepresentable {
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 
-// MARK: - Preview
+// Preview
 
 #Preview {
     NavigationStack {

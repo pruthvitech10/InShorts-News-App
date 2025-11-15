@@ -9,7 +9,7 @@ import Foundation
 import Combine
 import Translation
 
-// MARK: - TranslationService
+// Translates articles to user's language
 
 @MainActor
 final class TranslationService: ObservableObject {

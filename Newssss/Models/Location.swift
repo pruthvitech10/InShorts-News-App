@@ -7,7 +7,7 @@ import Foundation
 import Combine
 
 
-// MARK: - SupportedCountry
+// SupportedCountry
 
 enum SupportedCountry: String, CaseIterable, Codable {
     case italy = "it"
@@ -118,5 +118,5 @@ enum SupportedCountry: String, CaseIterable, Codable {
     }
 }
 
-// MARK: - LocationService
+// LocationService
 // LocationService is defined in Core/Services/LocationService.swift

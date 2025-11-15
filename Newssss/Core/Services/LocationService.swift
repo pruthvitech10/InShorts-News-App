@@ -63,7 +63,7 @@ class LocationService: NSObject, ObservableObject {
         }
     }
     
-    // MARK: - Public Methods
+    // Public Methods
     
     /// Returns the current country code for news API (e.g., "us", "gb")
     func getNewsCountryCode() -> String {
@@ -94,7 +94,7 @@ class LocationService: NSObject, ObservableObject {
     }
 }
 
-// MARK: - CLLocationManagerDelegate
+// CLLocationManagerDelegate
 
 extension LocationService: CLLocationManagerDelegate {
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
@@ -148,7 +148,7 @@ extension LocationService: CLLocationManagerDelegate {
     }
 }
 
-// MARK: - Notification Extension
+// Notification Extension
 
 extension Notification.Name {
     static let locationDidUpdate = Notification.Name("locationDidUpdate")

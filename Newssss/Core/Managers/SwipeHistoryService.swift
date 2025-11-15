@@ -22,9 +22,9 @@ class SwipeHistoryService: ObservableObject {
         loadHistory()
     }
     
-    // MARK: - Public Methods
+    // Public methods
     
-    /// Add a swiped article to history (most recent first)
+    // Add a swiped article to history (most recent first)
     func addSwipedArticle(_ article: Article) {
         // Remove if already exists to avoid duplicates
         swipedArticles.removeAll { $0.url == article.url }
@@ -51,7 +51,7 @@ class SwipeHistoryService: ObservableObject {
         saveHistory()
     }
     
-    // MARK: - Private Methods
+    // Save/load from disk
     
     private func loadHistory() {
         swipedArticles = PersistenceManager.shared.loadSwipeHistory()

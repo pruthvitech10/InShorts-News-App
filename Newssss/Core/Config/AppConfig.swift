@@ -8,35 +8,35 @@
 import Foundation
 import UIKit
 
-// MARK: - AppConfig
+// App configuration and API keys
 
 struct AppConfig {
-    // MARK: - API Configuration
+    // API key management
     // API Keys are now managed through a simple, robust rotation service.
     // Add multiple keys for each service in APIKeyRotationService.swift to automatically
     // handle rate limits and key expiration. This provides a seamless experience
     // without needing daily manual updates.
     
-    // MARK: - GNews.io (free tier: 100 requests/day, NO credit card required)
+    // GNews.io (free tier: 100 requests/day, NO credit card required)
     // 🔗 Get your free API key at: https://gnews.io/
     static func getGNewsAPIKey() async throws -> String {
         try await APIKeyRotationService.shared.getGNewsKey()
     }
     
-    // MARK: - NewsData.io (free tier: 500 requests/day, 10 articles per request)
+    // NewsData.io (free tier: 500 requests/day, 10 articles per request)
     // 🔗 Get your free API key at: https://newsdata.io/register
     static func getNewsDataIOKey() async throws -> String {
         try await APIKeyRotationService.shared.getNewsDataIOKey()
     }
     
-    // MARK: - NewsAPI.org (free tier: 100 requests/day, development only)
+    // NewsAPI.org (free tier: 100 requests/day, development only)
     // 🔗 Get your free API key at: https://newsapi.org/register
     static let newsAPIBaseURL = "https://newsapi.org/v2"
     static func getNewsAPIKey() async throws -> String {
         try await APIKeyRotationService.shared.getNewsAPIKey()
     }
     
-    // MARK: - RapidAPI (from rapidapi.com)
+    // RapidAPI (from rapidapi.com)
     // 🔗 Get your free API key at: https://rapidapi.com/hub
     // This key can be used to access multiple news APIs.
     static func getRapidAPIKey() async throws -> String {
@@ -47,53 +47,50 @@ struct AppConfig {
     static let rapidAPIHost = "real-time-news-data.p.rapidapi.com"
     static let rapidAPIBaseURL = "https://real-time-news-data.p.rapidapi.com"
     
-    // MARK: - Enabled APIs
-    /// List of enabled API providers in order of preference
-    /// RapidAPI disabled due to rate limit (429 error)
+    // Using 4 reliable news APIs (removed RapidAPI - wasn't working well)
     static let enabledAPIs: [NewsAPIProvider] = [
         .gnews,
         .newsDataIO,
         .newsAPI,
         .newsDataHub
-        // .rapidAPI  // Disabled - rate limit exceeded
     ]
     
-    // MARK: - NewsDataHub API (from newsdatahub.com)
+    // NewsDataHub API (from newsdatahub.com)
     // 🔗 Get your free API key at: https://newsdatahub.com/dashboards
     static func getNewsDataHubAPIKey() async throws -> String {
         try await APIKeyRotationService.shared.getNewsDataHubKey()
     }
     
-    // MARK: - API Strategy
+    // API fetching strategy
     // Set `fetchFromAllAPIs` to `true` to fetch from all configured APIs simultaneously.
     // This provides maximum content diversity and freshness.
     static let fetchFromAllAPIs = true
     
-    // MARK: - App Settings
+    // General app settings
     static let defaultCategory = "general"
     static let articlesPerPage = 10
     // Cache articles for 24 hours to minimize API calls and stay within free tier limits.
     // Set to 60 seconds for testing to see fresh news
     static let cacheExpirationTime: TimeInterval = 60 // 60 seconds for testing
     
-    // MARK: - News Freshness Settings
-    // Show news from the last 7 days to ensure we always have content
-    static let maximumArticleAge: TimeInterval = 7 * 24 * 60 * 60 // 7 days
-    static let preferredArticleAge: TimeInterval = 24 * 60 * 60  // 24 hours (for "fresh" indicator)
+    // News freshness - only show articles from last 48 hours
+    // This keeps content relevant without being too strict
+    static let maximumArticleAge: TimeInterval = 48 * 60 * 60 // 48 hours
+    static let preferredArticleAge: TimeInterval = 24 * 60 * 60  // 24 hours for "fresh" badge
     
-    // MARK: - UI Configuration
+    // UI settings
     static let animationDuration: Double = 0.3
     static let cardCornerRadius: CGFloat = 12
     static let defaultPadding: CGFloat = 16
     
-    // MARK: - Rate Limiting
+    // Rate limiting
     static let maxConcurrentRequests = 3
     static let requestTimeout: TimeInterval = 30
     static let retryAttempts = 2
     static let retryDelay: TimeInterval = 1.0
 }
 
-// MARK: - NewsAPIProvider
+// Available news API providers
 
 enum NewsAPIProvider: String, CaseIterable {
     case newsAPI      // NewsAPI.org
@@ -137,7 +134,7 @@ enum NewsAPIProvider: String, CaseIterable {
     }
 }
 
-// MARK: - API Error Types
+// API error types
 
 enum APIError: LocalizedError {
     case noAPIKey
@@ -162,7 +159,7 @@ enum APIError: LocalizedError {
     }
 }
 
-// MARK: - API Configuration Extension
+// Helper methods
 
 extension AppConfig {
     /// Check if any API keys are configured

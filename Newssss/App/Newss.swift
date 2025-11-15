@@ -13,7 +13,7 @@ import GoogleSignIn
 import Combine
 import os.log
 
-// MARK: - App Delegate
+// App Delegate
 
 class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication,
@@ -38,7 +38,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     }
 }
 
-// MARK: - Main App
+// Main App
 
 @main
 struct Newss: App {
@@ -62,7 +62,7 @@ struct Newss: App {
     }
 }
 
-// MARK: - Main Tab View
+// Main Tab View
 
 struct MainTabView: View {
     @State private var authManager: AuthenticationManager? = nil

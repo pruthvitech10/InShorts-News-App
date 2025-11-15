@@ -8,7 +8,7 @@
 import Foundation
 import Combine
 
-// MARK: - User Preferences
+// Stores what the user likes to read
 
 struct UserPreferences: Codable {
     var categoryScores: [String: Double] = [:]
@@ -29,7 +29,7 @@ struct UserPreferences: Codable {
     }
 }
 
-// MARK: - Personalization Service
+// Learns user preferences and personalizes the feed
 
 @MainActor
 final class PersonalizationService: ObservableObject {
@@ -44,9 +44,9 @@ final class PersonalizationService: ObservableObject {
         loadPreferences()
     }
     
-    // MARK: - Tracking Methods
+    // Track user behavior
     
-    /// Track when user reads an article
+    // Record when user reads an article
     func trackArticleRead(_ article: Article, readingTime: TimeInterval) {
         preferences.readArticles.insert(article.url)
         preferences.totalReadingTime += readingTime
@@ -124,9 +124,9 @@ final class PersonalizationService: ObservableObject {
         return "general"
     }
     
-    // MARK: - Personalization Algorithm
+    // Sort articles based on what user likes
     
-    /// Personalize articles for "For You" feed (Optimized)
+    // Personalize articles for "For You" feed
     func personalizeArticles(_ articles: [Article]) -> [Article] {
         guard !articles.isEmpty else { return [] }
         
@@ -184,9 +184,9 @@ final class PersonalizationService: ObservableObject {
         return max(0, score)
     }
     
-    // MARK: - Insights
+    // Get stats about user preferences
     
-    /// Get user's top interests
+    // Get user's top interests
     func getTopInterests() -> [String] {
         let sorted = preferences.categoryScores.sorted { $0.value > $1.value }
         return Array(sorted.prefix(5).map { $0.key.capitalized })
@@ -200,7 +200,7 @@ final class PersonalizationService: ObservableObject {
         return (preferences.articlesRead, preferences.totalReadingTime, avgTime)
     }
     
-    // MARK: - Persistence
+    // Save/load preferences
     
     private func loadPreferences() {
         if let loaded: UserPreferences = persistenceManager.load(forKey: persistenceKey, as: UserPreferences.self) {

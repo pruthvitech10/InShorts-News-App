@@ -8,7 +8,7 @@
 import Foundation
 
 
-// MARK: - NetworkError
+// Network error types we handle
 
 public enum NetworkError: Error {
     case invalidURL
@@ -69,7 +69,7 @@ public enum NetworkError: Error {
     }
 }
 
-// MARK: - NetworkManager
+// Handles all network requests with retry logic and connection pooling
 
 class NetworkManager {
     static let shared = NetworkManager()
@@ -139,9 +139,11 @@ class NetworkManager {
                 
                 // Don't retry client errors or rate limits
                 switch error {
-                case .serverError(let code) where (400...499).contains(code),
-                     .rateLimitExceeded,
-                     .decodingError:
+                case .serverError(let code) where (400...499).contains(code):
+                    throw error
+                case .rateLimitExceeded:
+                    throw error
+                case .decodingError:
                     throw error
                 default:
                     break

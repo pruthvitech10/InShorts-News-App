@@ -8,7 +8,7 @@
 import SwiftUI
 
 
-// MARK: - BookmarksView
+// BookmarksView
 
 struct BookmarksView: View {
     @StateObject private var bookmarkService = BookmarkService.shared
@@ -66,7 +66,7 @@ struct BookmarksView: View {
         .background(Color(.systemGroupedBackground).ignoresSafeArea())
     }
     
-    // MARK: - Bookmarks List
+    // Bookmarks List
     
     private var bookmarksList: some View {
         ScrollViewReader { proxy in
@@ -107,7 +107,7 @@ struct BookmarksView: View {
     }
 }
 
-// MARK: - BookmarkCard
+// BookmarkCard
 
 private struct BookmarkCard: View {
     let article: Article
@@ -225,7 +225,7 @@ private struct BookmarkCard: View {
     }
 }
 
-// MARK: - Preview
+// Preview
 
 #Preview {
     NavigationStack {

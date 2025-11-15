@@ -9,9 +9,7 @@
 import Foundation
 import os.log
 
-// MARK: - ErrorLogger
-
-/// Centralized error logging service
+// Centralized error logging
 class ErrorLogger {
     static let shared = ErrorLogger()
     
@@ -19,9 +17,7 @@ class ErrorLogger {
     
     private init() {}
     
-    // MARK: - Public Logging Methods
-    
-    /// Log an error with context
+    // Log errors with context
     /// - Parameters:
     ///   - error: The error to log
     ///   - context: Context string describing where the error occurred
@@ -62,7 +58,7 @@ class ErrorLogger {
         #endif
     }
     
-    // MARK: - Private Implementation
+    // Internal logging logic
     
     private func logError(_ error: Error,
                          context: String,
@@ -134,7 +130,7 @@ class ErrorLogger {
     }
 }
 
-// MARK: - Convenience Extensions
+// Helper methods
 
 extension ErrorLogger {
     /// Log network errors with specific context
@@ -158,7 +154,7 @@ extension ErrorLogger {
     }
 }
 
-// MARK: - Usage Examples
+// Usage examples
 /*
  
  // Example 1: Log general error

@@ -8,7 +8,7 @@
 import SwiftUI
 
 
-// MARK: - SignInOptionsView
+// Sign in options screen
 
 struct SignInOptionsView: View {
     @Environment(\.dismiss) private var dismiss
@@ -125,7 +125,7 @@ struct SignInOptionsView: View {
     }
 }
 
-// MARK: - SignInButton
+// Sign in button
 
 private struct SignInButton: View {
     var title: String

@@ -9,7 +9,7 @@
 import SwiftUI
 
 
-// MARK: - RecommendationCard
+// RecommendationCard
 
 struct RecommendationCard: View {
     let article: Article
@@ -133,7 +133,7 @@ struct RecommendationCard: View {
     }
 }
 
-// MARK: - RecommendationCardSkeleton
+// Loading skeleton
 
 struct RecommendationCardSkeleton: View {
     @State private var isAnimating = false
@@ -180,7 +180,7 @@ struct RecommendationCardSkeleton: View {
     }
 }
 
-// MARK: - Shimmer Effect
+// Shimmer animation
 
 extension View {
     func shimmer(isAnimating: Bool) -> some View {
@@ -188,7 +188,7 @@ extension View {
     }
 }
 
-// MARK: - ShimmerModifier
+// Shimmer modifier
 
 struct ShimmerModifier: ViewModifier {
     let isAnimating: Bool

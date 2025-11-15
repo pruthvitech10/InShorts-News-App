@@ -8,7 +8,7 @@
 import Foundation
 
 
-// MARK: - NewsAPIService
+// NewsAPIService
 
 class NewsAPIService {
     static let shared = NewsAPIService()
@@ -18,7 +18,7 @@ class NewsAPIService {
     
     private init() {}
     
-    // MARK: - Fetch Top Headlines
+    // Fetch Top Headlines
     func fetchTopHeadlines(category: NewsCategory?, page: Int, pageSize: Int) async throws -> [Article] {
         let maxRetries = 3
         
@@ -76,7 +76,7 @@ class NewsAPIService {
         throw NetworkError.rateLimitExceeded
     }
     
-    // MARK: - Search Articles
+    // Search Articles
     func searchArticles(query: String, page: Int, pageSize: Int) async throws -> [Article] {
         guard !query.isEmpty else {
             throw NewsAPIError.emptyQuery
@@ -131,7 +131,7 @@ class NewsAPIService {
         throw NetworkError.rateLimitExceeded
     }
     
-    // MARK: - Fetch Sources
+    // Fetch Sources
     func fetchSources(category: NewsCategory? = nil) async throws -> [Source] {
         let apiKey = try await AppConfig.getNewsAPIKey()
         
@@ -155,14 +155,14 @@ class NewsAPIService {
 
 extension NewsAPIService: NewsAPIServiceProtocol {}
 
-// MARK: - SourcesResponse
+// SourcesResponse
 
 public struct SourcesResponse: Codable {
     let status: String
     let sources: [Source]
 }
 
-// MARK: - NewsAPIError
+// NewsAPIError
 
 enum NewsAPIError: Error, LocalizedError {
     case missingAPIKey

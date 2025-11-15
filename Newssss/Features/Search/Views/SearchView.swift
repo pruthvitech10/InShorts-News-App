@@ -8,7 +8,7 @@
 import SwiftUI
 
 
-// MARK: - SearchView
+// SearchView
 
 @available(iOS 26.0, *)
 struct SearchView: View {
@@ -183,13 +183,13 @@ struct SearchView: View {
     }
 }
 
-// MARK: - SearchTab
+// Search tabs
 
 enum SearchTab {
     case myFeed, allNews, topStories, trending
 }
 
-// MARK: - CategoryShortcutsView
+// Quick category shortcuts
 
 @available(iOS 26.0, *)
 struct CategoryShortcutsView: View {
@@ -246,7 +246,7 @@ struct CategoryShortcutsView: View {
     }
 }
 
-// MARK: - CategoryShortcutCard
+// Category shortcut card
 
 struct CategoryShortcutCard: View {
     let icon: String
@@ -281,7 +281,7 @@ struct CategoryShortcutCard: View {
     }
 }
 
-// MARK: - TrendingSearchButton
+// Trending search button
 
 struct TrendingSearchButton: View {
     let text: String
@@ -306,7 +306,7 @@ struct TrendingSearchButton: View {
     }
 }
 
-// MARK: - SearchResultRow
+// Search result row
 
 struct SearchResultRow: View {
     let article: Article
@@ -395,7 +395,7 @@ struct SearchResultRow: View {
     }
 }
 
-// MARK: - NotificationsSection
+// Breaking news section
 
 struct NotificationsSection: View {
     @StateObject private var breakingNewsService = BreakingNewsService.shared
@@ -494,7 +494,7 @@ struct NotificationsSection: View {
     }
 }
 
-// MARK: - NotificationRow
+// Breaking news row
 
 struct NotificationRow: View {
     let newsItem: BreakingNewsItem
@@ -574,10 +574,10 @@ struct NotificationRow: View {
     }
 }
 
-// MARK: - InsightsSection (Disabled - AI Insights feature removed)
+// AI Insights (disabled)
 // The AI Insights feature has been temporarily disabled
 
-// MARK: - Color Extension for Hex
+// Hex color support
 extension Color {
     init(hex: String) {
         let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
@@ -605,7 +605,7 @@ extension Color {
     }
 }
 
-// MARK: - SearchView_Previews
+// Preview
 
 @available(iOS 26.0, *)
 struct SearchView_Previews: PreviewProvider {

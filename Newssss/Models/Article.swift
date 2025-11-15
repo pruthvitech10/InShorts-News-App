@@ -7,7 +7,7 @@
 
 import Foundation
 
-// MARK: - Article
+// Article
 public struct Article: Codable, Identifiable, Hashable {
     public let id: UUID
     let source: Source
@@ -100,7 +100,7 @@ public struct Article: Codable, Identifiable, Hashable {
     }
 }
 
-// MARK: - Source
+// Source
 struct Source: Codable, Hashable {
     let id: String?
     let name: String

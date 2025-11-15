@@ -8,7 +8,7 @@
 import Foundation
 
 
-// MARK: - User Settings
+// User Settings
 struct UserSettings: Codable {
     var preferredCategory: NewsCategory
     var fontSize: FontSize
@@ -19,7 +19,7 @@ struct UserSettings: Codable {
     var preferredLanguage: String
     var localNewsPercentage: Int // 0-100, how much local vs global news
     
-    // MARK: - Default Settings
+    // Default Settings
     static let `default` = UserSettings(
         preferredCategory: NewsCategory.general,
         fontSize: .medium,
@@ -31,7 +31,7 @@ struct UserSettings: Codable {
         localNewsPercentage: 70 // 70% local, 30% global
     )
     
-    // MARK: - Font Size
+    // Font Size
     enum FontSize: String, CaseIterable, Codable {
         case small = "Small"
         case medium = "Medium"
@@ -52,7 +52,7 @@ struct UserSettings: Codable {
         }
     }
     
-    // MARK: - App Theme
+    // App Theme
     enum AppTheme: String, CaseIterable, Codable {
         case system = "System"
         case light = "Light"

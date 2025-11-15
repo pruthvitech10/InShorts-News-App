@@ -11,43 +11,39 @@ import Combine
 
 @MainActor
 class FeedViewModel: ObservableObject {
-    // MARK: - Published Properties
+    // Published properties for SwiftUI binding
     @Published var articles: [Article] = []
     @Published var isLoading: Bool = false
     @Published var canLoadMore: Bool = false
     @Published var errorMessage: String? = nil
     @Published var isLoadingMore: Bool = false
 
-    // MARK: - Other Properties
+    // Core properties
     var selectedCategory: NewsCategory
     var currentPage: Int = 1
-    let cache: NewsCacheProtocol
     let aggregatorService: NewsAggregatorServiceProtocol
     let maxCachedArticles: Int = 100
 
-    // MARK: - Private Properties
+    // Background tasks - need to track these to cancel when switching categories
     private var currentSummarizationTask: Task<Void, Never>?
     private var currentFetchTask: Task<Void, Never>?
     private var loadingTask: Task<Void, Never>?
 
-    // MARK: - Initialization
+    // Setup
     init(selectedCategory: NewsCategory,
-         cache: NewsCacheProtocol,
          aggregatorService: NewsAggregatorServiceProtocol) {
         self.selectedCategory = selectedCategory
-        self.cache = cache
         self.aggregatorService = aggregatorService
     }
     
     convenience init(selectedCategory: NewsCategory) {
         self.init(
             selectedCategory: selectedCategory,
-            cache: NewsCache.shared,
             aggregatorService: NewsAggregatorService.shared
         )
     }
 
-    // MARK: - Task Management
+    // Cancel any running tasks to avoid conflicts
     func cancelAllTasks() {
         loadingTask?.cancel()
         currentFetchTask?.cancel()
@@ -57,16 +53,15 @@ class FeedViewModel: ObservableObject {
         currentSummarizationTask = nil
     }
 
-    // MARK: - Article Loading (Optimized)
+    // Main function to load articles for the selected category
     func loadArticles(useCache: Bool = true) async {
-        // Cancel previous loading
-        loadingTask?.cancel()
+        // Stop any previous loading first
+        cancelAllTasks()
         
-        // Reset state
         isLoading = true
         errorMessage = nil
 
-        // Fast path for History
+        // History is stored locally, no need to fetch
         if selectedCategory == .history {
             articles = SwipeHistoryService.shared.getSwipedArticles()
             canLoadMore = false
@@ -74,21 +69,13 @@ class FeedViewModel: ObservableObject {
             return
         }
         
-        // Fast path for For You
+        // For You uses personalization logic
         if selectedCategory == .forYou {
-            await loadPersonalizedFeed(useCache: useCache)
+            await loadPersonalizedFeed(useCache: false)
             return
         }
 
-        // Try cache first (non-blocking)
-        let cacheKey = NewsCache.cacheKey(for: selectedCategory, page: currentPage)
-        if useCache, let cachedArticles = await cache.get(forKey: cacheKey), !cachedArticles.isEmpty {
-            articles = cachedArticles
-            isLoading = false
-            return
-        }
-
-        // Fetch from API
+        // Fetch fresh articles from our APIs
         do {
             Logger.debug("🌐 Fetching articles for \(selectedCategory.displayName)...", category: .viewModel)
             
@@ -110,16 +97,8 @@ class FeedViewModel: ObservableObject {
 
             // Generate AI summaries in background (non-blocking)
             startBackgroundSummarization(for: fetchedArticles)
-
-            // Cache the results
-            do {
-                await cache.set(articles: fetchedArticles, forKey: cacheKey)
-            } catch {
-                Logger.error("Failed to cache articles: \(error.localizedDescription)", category: .viewModel)
-                // Non-critical error, continue
-            }
             
-            Logger.debug("✅ Loaded \(articles.count) articles for \(selectedCategory.displayName)", category: .viewModel)
+            Logger.debug("✅ Loaded \(articles.count) FRESH articles for \(selectedCategory.displayName)", category: .viewModel)
             
         } catch {
             errorMessage = "Failed to load articles: \(error.localizedDescription)"
@@ -130,7 +109,7 @@ class FeedViewModel: ObservableObject {
         isLoading = false
     }
 
-    // MARK: - Personalized Feed
+    // Load personalized For You feed
     private func loadPersonalizedFeed(useCache: Bool) async {
         do {
             Logger.debug("🎯 Loading personalized 'For You' feed", category: .viewModel)
@@ -166,7 +145,7 @@ class FeedViewModel: ObservableObject {
         isLoading = false
     }
     
-    // MARK: - Background AI Summarization
+    // Generate AI summaries in background
     private func startBackgroundSummarization(for fetchedArticles: [Article]) {
         currentSummarizationTask = Task { [weak self] in
             guard let self = self else { return }
@@ -206,14 +185,11 @@ class FeedViewModel: ObservableObject {
                 }
                 
                 Logger.debug("✅ AI summarization completed", category: .viewModel)
-                
-            } catch {
-                Logger.error("Summarization task failed: \(error.localizedDescription)", category: .viewModel)
             }
         }
     }
 
-    // MARK: - Pagination
+    // Load more articles
     func loadMoreArticles() async {
         // Guard conditions
         guard selectedCategory != .history else { return }
@@ -223,21 +199,6 @@ class FeedViewModel: ObservableObject {
         
         isLoadingMore = true
         currentPage += 1
-        
-        let cacheKey = NewsCache.cacheKey(for: selectedCategory, page: currentPage)
-        
-        // Try cache first
-        do {
-            if let cachedArticles = await cache.get(forKey: cacheKey), !cachedArticles.isEmpty {
-                articles.append(contentsOf: cachedArticles)
-                canLoadMore = cachedArticles.count >= AppConfig.articlesPerPage
-                isLoadingMore = false
-                Logger.debug("📦 Loaded page \(currentPage) from cache", category: .viewModel)
-                return
-            }
-        } catch {
-            Logger.error("Cache read error for page \(currentPage): \(error.localizedDescription)", category: .viewModel)
-        }
         
         // Fetch from API
         do {
@@ -261,12 +222,7 @@ class FeedViewModel: ObservableObject {
                 Logger.debug("⚠️ Trimmed to \(maxCachedArticles) articles", category: .viewModel)
             }
             
-            // Cache the page
-            do {
-                await cache.set(articles: fetchedArticles, forKey: cacheKey)
-            } catch {
-                Logger.error("Failed to cache page \(currentPage): \(error.localizedDescription)", category: .viewModel)
-            }
+            // No caching - always fresh!
             
             canLoadMore = fetchedArticles.count >= AppConfig.articlesPerPage
             Logger.debug("✅ Loaded page \(currentPage) with \(newArticles.count) new articles", category: .viewModel)
@@ -279,13 +235,9 @@ class FeedViewModel: ObservableObject {
         isLoadingMore = false
     }
 
-    // MARK: - Refresh
+    // Refresh feed
     func refreshArticles() async {
-        do {
-            await cache.clear(forCategory: selectedCategory)
-        } catch {
-            Logger.error("Failed to clear cache: \(error.localizedDescription)", category: .viewModel)
-        }
+        // No cache to clear - just reload
         await loadArticles(useCache: false)
     }
 
@@ -297,58 +249,36 @@ class FeedViewModel: ObservableObject {
             message: "Refreshing \(category.displayName)..."
         ))
         
-        do {
-            await cache.clear(forCategory: category)
-        } catch {
-            Logger.error("Failed to clear cache for \(category.displayName): \(error.localizedDescription)", category: .viewModel)
-        }
-        
         if category == selectedCategory {
             await loadArticles(useCache: false)
         }
     }
 
-    // MARK: - Category Change
+    // Switch categories
     func changeCategory(_ category: NewsCategory) {
         Logger.debug("🔄 Changing category to: \(category.displayName)", category: .viewModel)
         
-        // Skip if same category
+        // Don't do anything if user taps the same category
         guard category != selectedCategory else {
             Logger.debug("⚠️ Category unchanged: \(category.displayName)", category: .viewModel)
             return
         }
         
-        // Update category
-        selectedCategory = category
-        
-        // Reset state
-        articles = []
-        errorMessage = nil
-        currentPage = 1
-        canLoadMore = true
-        isLoading = true
-        isLoadingMore = false
-        
-        // Cancel ongoing tasks
+        // Stop any ongoing requests to avoid conflicts
         cancelAllTasks()
         
-        // Load new category
-        Task { [weak self] in
-            guard let self = self else { return }
-            
-            do {
-                await self.cache.clear(forKey: NewsCache.cacheKey(for: category, page: 1))
-                Logger.debug("🗑️ Cleared cache for \(category.displayName)", category: .viewModel)
-            } catch {
-                Logger.error("Failed to clear cache: \(error.localizedDescription)", category: .viewModel)
-            }
-            
-            await self.loadArticles(useCache: false)
-            Logger.debug("✅ Category changed to \(category.displayName) with \(self.articles.count) articles", category: .viewModel)
+        selectedCategory = category
+        currentPage = 1
+        
+        // Keep old articles visible while loading new ones
+        // This makes the transition feel smoother
+        
+        Task {
+            await loadArticles(useCache: false)
         }
     }
 
-    // MARK: - Cleanup
+    // Cleanup
     deinit {
         // Tasks are automatically cancelled when the view model is deallocated
     }

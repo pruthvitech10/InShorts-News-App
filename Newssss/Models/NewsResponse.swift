@@ -8,7 +8,7 @@
 import Foundation
 
 
-// MARK: - News API Response
+// News API Response
 struct NewsResponse: Codable {
     let status: String
     let totalResults: Int

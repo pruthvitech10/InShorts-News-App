@@ -9,7 +9,7 @@
 import Foundation
 import NaturalLanguage
 
-// MARK: - Summarization Error
+// Summarization errors
 
 enum SummarizationError: LocalizedError {
     case textTooShort
@@ -28,13 +28,12 @@ enum SummarizationError: LocalizedError {
     }
 }
 
-// MARK: - ArticleSummarizationService
-
-/// CRITICAL: Removed @MainActor - CPU-intensive work should NOT run on main thread
+// AI-powered article summarization
+// Runs off main thread for performance
 actor ArticleSummarizationService {
     static let shared = ArticleSummarizationService()
     
-    // MARK: - Configuration
+    // Settings
     
     private struct Config {
         static let minTextLength = 100
@@ -49,7 +48,7 @@ actor ArticleSummarizationService {
         static let keywordWeight = 0.3
     }
     
-    // MARK: - Cache
+    // Summary cache
     
     private var summaryCache: [String: String] = [:]
     private var keywordCache: [String: [String]] = [:]
@@ -57,9 +56,9 @@ actor ArticleSummarizationService {
     
     private init() {}
     
-    // MARK: - Public API
+    // Summarize articles
     
-    /// Summarize article text into key sentences
+    // Extract key sentences from article
     /// - Parameters:
     ///   - text: Full article text
     ///   - sentences: Number of sentences to return (default: 3)
@@ -110,7 +109,7 @@ actor ArticleSummarizationService {
         Logger.debug("🗑️ Summary cache cleared", category: .general)
     }
     
-    // MARK: - Private Methods
+    // Internal logic
     
     private func cacheSummary(_ summary: String, forKey key: String) {
         // Limit cache size
@@ -285,7 +284,7 @@ actor ArticleSummarizationService {
     ]
 }
 
-// MARK: - Batch Summarization Extension
+// Batch processing
 
 extension ArticleSummarizationService {
     /// Summarize multiple articles in parallel with rate limiting
@@ -353,5 +352,5 @@ extension ArticleSummarizationService {
     }
 }
 
-// MARK: - Article Extension
+// Article helpers
 // Article.withSummary() is defined in Models/Article.swift

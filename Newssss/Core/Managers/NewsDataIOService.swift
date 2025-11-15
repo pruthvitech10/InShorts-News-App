@@ -8,7 +8,7 @@
 import Foundation
 
 
-// MARK: - NewsDataIOResponse
+// NewsDataIOResponse
 
 struct NewsDataIOResponse: Codable {
     let status: String
@@ -17,7 +17,7 @@ struct NewsDataIOResponse: Codable {
     let nextPage: String?
 }
 
-// MARK: - NewsDataIOErrorResponse
+// NewsDataIOErrorResponse
 
 struct NewsDataIOErrorResponse: Codable {
     let status: String
@@ -29,7 +29,7 @@ struct NewsDataIOErrorResponse: Codable {
     }
 }
 
-// MARK: - NewsDataIOArticle
+// NewsDataIOArticle
 
 struct NewsDataIOArticle: Codable {
     let articleId: String?
@@ -83,7 +83,7 @@ struct NewsDataIOArticle: Codable {
     }
 }
 
-// MARK: - NewsDataIOService
+// NewsDataIOService
 
 class NewsDataIOService {
     static let shared = NewsDataIOService()
@@ -93,7 +93,7 @@ class NewsDataIOService {
     
     private init() {}
     
-    // MARK: - Fetch Latest News
+    // Fetch Latest News
     /// Fetches latest news from NewsData.io
     /// - Parameters:
     ///   - category: News category (e.g., business, technology, sports)
@@ -165,7 +165,7 @@ class NewsDataIOService {
         throw NetworkError.rateLimitExceeded
     }
     
-    // MARK: - Search News
+    // Search News
     /// Search for specific news articles
     func searchNews(query: String, language: String? = "en", page: String? = nil) async throws -> [Article] {
         guard !query.isEmpty else {
@@ -181,7 +181,7 @@ class NewsDataIOService {
         )
     }
     
-    // MARK: - Fetch by Multiple Categories
+    // Fetch by Multiple Categories
     /// Fetch news from multiple categories
     func fetchMultipleCategories(categories: [NewsCategory], country: String? = "it") async throws -> [Article] {
         var allArticles: [Article] = []
@@ -204,7 +204,7 @@ class NewsDataIOService {
         return uniqueArticles
     }
     
-    // MARK: - Private Helper Methods
+    // Private Helper Methods
     
     /// Converts a NewsData.io article to our internal Article model
     private func convertToArticle(_ newsDataArticle: NewsDataIOArticle) -> Article? {
@@ -260,7 +260,7 @@ class NewsDataIOService {
     }
 }
 
-// MARK: - NewsDataIOError
+// NewsDataIOError
 
 enum NewsDataIOError: Error, LocalizedError {
     case missingAPIKey
