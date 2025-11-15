@@ -78,27 +78,27 @@ class NetworkManager {
     private let decoder: JSONDecoder
     
     private init() {
-        // Configure URLSession with timeout and caching
+        // Optimized URLSession configuration for speed
         let configuration = URLSessionConfiguration.default
-        configuration.timeoutIntervalForRequest = 30
-        configuration.timeoutIntervalForResource = 60
+        configuration.timeoutIntervalForRequest = 15 // Faster timeout
+        configuration.timeoutIntervalForResource = 30
         configuration.requestCachePolicy = .returnCacheDataElseLoad
+        configuration.httpMaximumConnectionsPerHost = 6 // Parallel requests
+        configuration.waitsForConnectivity = true
         configuration.urlCache = URLCache(
-            memoryCapacity: 50 * 1024 * 1024, // 50 MB
-            diskCapacity: 100 * 1024 * 1024,  // 100 MB
+            memoryCapacity: 100 * 1024 * 1024, // 100 MB - more memory cache
+            diskCapacity: 200 * 1024 * 1024,   // 200 MB - more disk cache
             diskPath: "news_api_cache"
         )
         
         self.session = URLSession(configuration: configuration)
         
-        // Configure JSON decoder
+        // Optimized JSON decoder
         self.decoder = JSONDecoder()
         self.decoder.dateDecodingStrategy = .iso8601
     }
     
     func fetch<T: Decodable>(url: URL) async throws -> T {
-        Logger.debug("Fetching: \(url.absoluteString)", category: .network)
-        
         do {
             let (data, response) = try await session.data(from: url)
             
@@ -106,37 +106,28 @@ class NetworkManager {
                 throw NetworkError.unknown(NSError(domain: "Invalid response", code: -1))
             }
             
-            Logger.debug("HTTP \(httpResponse.statusCode)", category: .network)
-            
+            // Fast path for success
             guard (200...299).contains(httpResponse.statusCode) else {
-                #if DEBUG
-                if let errorBody = String(data: data, encoding: .utf8) {
-                    ErrorLogger.logWarning("Server error: \(errorBody)", context: "NetworkManager")
+                if httpResponse.statusCode == 429 {
+                    throw NetworkError.rateLimitExceeded
                 }
-                #endif
                 throw NetworkError.serverError(statusCode: httpResponse.statusCode)
             }
             
-            let decoded = try decoder.decode(T.self, from: data)
-            return decoded
+            // Fast decode
+            return try decoder.decode(T.self, from: data)
             
         } catch let error as DecodingError {
-            ErrorLogger.log(error, context: "NetworkManager Decoding")
-            #if DEBUG
-            // Only log raw data in debug builds
-            if let rawString = String(data: try await session.data(from: url).0, encoding: .utf8) {
-                ErrorLogger.logWarning("Raw response: \(rawString.prefix(500))", context: "NetworkManager")
-            }
-            #endif
+            Logger.error("Decode error: \(error)", category: .network)
             throw NetworkError.decodingError
-            
+        } catch let error as NetworkError {
+            throw error
         } catch {
-            ErrorLogger.log(error, context: "NetworkManager Request")
             throw NetworkError.unknown(error)
         }
     }
     
-    // Note: Add retry logic for transient failures
+    // Optimized retry with faster backoff
     func fetchWithRetry<T: Decodable>(url: URL, maxRetries: Int = 2) async throws -> T {
         var lastError: Error?
         
@@ -146,16 +137,20 @@ class NetworkManager {
             } catch let error as NetworkError {
                 lastError = error
                 
-                // Don't retry client errors (4xx)
-                if case .serverError(let code) = error, (400...499).contains(code) {
+                // Don't retry client errors or rate limits
+                switch error {
+                case .serverError(let code) where (400...499).contains(code),
+                     .rateLimitExceeded,
+                     .decodingError:
                     throw error
+                default:
+                    break
                 }
                 
-                // Exponential backoff
+                // Fast exponential backoff: 0.5s, 1s
                 if attempt < maxRetries {
-                    let delay = UInt64(pow(2.0, Double(attempt)) * 1_000_000_000) // 1s, 2s, 4s
+                    let delay = UInt64(pow(1.5, Double(attempt)) * 500_000_000)
                     try await Task.sleep(nanoseconds: delay)
-                    ErrorLogger.logWarning("Retry \(attempt + 1)/\(maxRetries)", context: "NetworkManager")
                 }
             }
         }

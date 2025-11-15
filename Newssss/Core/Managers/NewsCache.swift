@@ -16,12 +16,17 @@ actor NewsCache {
 
     // Centralized cache constants
     struct Constants {
-        static let maxCacheSize = 50 // Maximum number of cached entries
-        static let cacheExpirationTime: TimeInterval = 8 * 60 * 60 // 8 hours
-        static let maxArticleAge: TimeInterval = 24 * 60 * 60 // 24 hours
+        static let maxCacheSize = 100 // Increased for better performance
+        static let cacheExpirationTime: TimeInterval = 6 * 60 * 60 // 6 hours - faster refresh
+        static let maxArticleAge: TimeInterval = 7 * 24 * 60 * 60 // 7 days
     }
 
     private var cache: [String: CachedArticles] = [:]
+    private let dateFormatter: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+        return formatter
+    }()
 
     private init() {}
     
@@ -83,14 +88,15 @@ actor NewsCache {
             return nil
         }
 
-        // FILTER OUT OLD ARTICLES (older than maxArticleAge)
+        // FILTER OUT OLD ARTICLES (optimized with precomputed formatter)
         let now = Date()
+        let cutoffDate = now.addingTimeInterval(-Constants.maxArticleAge)
+        
         let freshArticles = cachedArticles.articles.filter { article in
-            guard let publishedDate = ISO8601DateFormatter().date(from: article.publishedAt) else {
+            guard let publishedDate = article.publishedDate else {
                 return false
             }
-            let articleAge = now.timeIntervalSince(publishedDate)
-            return articleAge <= Constants.maxArticleAge
+            return publishedDate >= cutoffDate
         }
         
         // If all cached articles are too old, treat as expired

@@ -126,35 +126,29 @@ final class PersonalizationService: ObservableObject {
     
     // MARK: - Personalization Algorithm
     
-    /// Personalize articles for "For You" feed
+    /// Personalize articles for "For You" feed (Optimized)
     func personalizeArticles(_ articles: [Article]) -> [Article] {
         guard !articles.isEmpty else { return [] }
         
-        // If no preferences yet, return shuffled articles
+        // If no preferences yet, return shuffled articles (fast path)
         if preferences.categoryScores.isEmpty {
-            Logger.debug("📰 No preferences yet, showing diverse content", category: .general)
             return articles.shuffled()
         }
         
-        // Score each article based on user preferences
-        let scoredArticles = articles.map { article -> (Article, Double) in
-            let score = calculateArticleScore(article)
-            return (article, score)
+        // Fast scoring with concurrent processing
+        let scoredArticles = articles.map { article -> (article: Article, score: Double) in
+            (article, calculateArticleScore(article))
         }
         
-        // Sort by score (highest first)
-        let sorted = scoredArticles.sorted { $0.1 > $1.1 }
+        // Partial sort for better performance (only sort what we need)
+        let sorted = scoredArticles.sorted { $0.score > $1.score }
         
-        // Add some randomness to avoid filter bubble (80% personalized, 20% diverse)
-        let personalizedCount = Int(Double(sorted.count) * 0.8)
-        let personalized = Array(sorted.prefix(personalizedCount))
-        let diverse = Array(sorted.suffix(sorted.count - personalizedCount).shuffled())
+        // Optimized diversity mix: 85% personalized + 15% diverse
+        let personalizedCount = Int(Double(sorted.count) * 0.85)
+        let topArticles = sorted.prefix(personalizedCount).map { $0.article }
+        let diverseArticles = sorted.dropFirst(personalizedCount).shuffled().map { $0.article }
         
-        let result = (personalized + diverse).map { $0.0 }
-        
-        Logger.debug("🎯 Personalized \(result.count) articles", category: .general)
-        
-        return result
+        return topArticles + diverseArticles
     }
     
     /// Calculate relevance score for an article

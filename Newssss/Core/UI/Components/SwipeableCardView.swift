@@ -45,27 +45,25 @@ struct SwipeableCardView: View {
                             AsyncImage(url: url) { phase in
                                 switch phase {
                                 case .empty:
-                                    Rectangle()
-                                        .fill(Color.gray.opacity(0.3))
-                                        .overlay(ProgressView())
+                                    Color.gray.opacity(0.2)
                                 case .success(let image):
                                     image
                                         .resizable()
                                         .aspectRatio(contentMode: .fill)
                                 case .failure:
-                                    Rectangle()
-                                        .fill(Color.gray.opacity(0.3))
+                                    Color.gray.opacity(0.2)
                                         .overlay(
                                             Image(systemName: "photo")
-                                                .font(.system(size: 50))
-                                                .foregroundColor(.gray)
+                                                .font(.largeTitle)
+                                                .foregroundColor(.gray.opacity(0.5))
                                         )
                                 @unknown default:
-                                    EmptyView()
+                                    Color.clear
                                 }
                             }
                             .frame(width: geometry.size.width, height: geometry.size.height * 0.45)
                             .clipped()
+                            .drawingGroup() // GPU acceleration
                         } else {
                             Rectangle()
                                 .fill(Color.gray.opacity(0.3))

@@ -28,6 +28,7 @@ class FeedViewModel: ObservableObject {
     // MARK: - Private Properties
     private var currentSummarizationTask: Task<Void, Never>?
     private var currentFetchTask: Task<Void, Never>?
+    private var loadingTask: Task<Void, Never>?
 
     // MARK: - Initialization
     init(selectedCategory: NewsCategory,
@@ -48,56 +49,43 @@ class FeedViewModel: ObservableObject {
 
     // MARK: - Task Management
     func cancelAllTasks() {
+        loadingTask?.cancel()
         currentFetchTask?.cancel()
         currentSummarizationTask?.cancel()
+        loadingTask = nil
         currentFetchTask = nil
         currentSummarizationTask = nil
     }
 
-    // MARK: - Article Loading
+    // MARK: - Article Loading (Optimized)
     func loadArticles(useCache: Bool = true) async {
-        // Cancel any ongoing tasks
-        cancelAllTasks()
+        // Cancel previous loading
+        loadingTask?.cancel()
         
         // Reset state
         isLoading = true
         errorMessage = nil
 
-        // Handle History category specially - load from local history
+        // Fast path for History
         if selectedCategory == .history {
-            do {
-                articles = SwipeHistoryService.shared.getSwipedArticles()
-                canLoadMore = false
-                Logger.debug("📜 Loaded \(articles.count) articles from swipe history", category: .viewModel)
-            } catch {
-                Logger.error("Failed to load history: \(error.localizedDescription)", category: .viewModel)
-                errorMessage = "Failed to load history"
-                articles = []
-            }
+            articles = SwipeHistoryService.shared.getSwipedArticles()
+            canLoadMore = false
             isLoading = false
             return
         }
         
-        // Handle "For You" category - personalized feed
+        // Fast path for For You
         if selectedCategory == .forYou {
             await loadPersonalizedFeed(useCache: useCache)
             return
         }
 
-        // Try cache first if enabled
+        // Try cache first (non-blocking)
         let cacheKey = NewsCache.cacheKey(for: selectedCategory, page: currentPage)
-        if useCache {
-            do {
-                if let cachedArticles = await cache.get(forKey: cacheKey), !cachedArticles.isEmpty {
-                    articles = cachedArticles
-                    isLoading = false
-                    Logger.debug("📦 Loaded \(articles.count) articles from cache for \(selectedCategory.displayName)", category: .viewModel)
-                    return
-                }
-            } catch {
-                Logger.error("Cache read error: \(error.localizedDescription)", category: .viewModel)
-                // Continue to fetch from API
-            }
+        if useCache, let cachedArticles = await cache.get(forKey: cacheKey), !cachedArticles.isEmpty {
+            articles = cachedArticles
+            isLoading = false
+            return
         }
 
         // Fetch from API
