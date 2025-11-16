@@ -218,10 +218,6 @@ class NewsAggregatorService {
          
         return uniqueArticles
     }
-     
-    // Removed old unused API methods (RapidAPI, NewsDataHub, GNews, NYTimes, Currents, MediaStack)
-    // Now using Italy-focused sources ONLY
-    // All external API services removed
     
      
     // Background auto-refresh
