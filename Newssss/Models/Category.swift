@@ -80,4 +80,57 @@ enum NewsCategory: String, CaseIterable, Codable {
             return nil  // History is local-only, not fetched from API
         }
     }
+    
+    /// GNews.io category mapping
+    /// GNews uses "topic" parameter with specific values
+    var gNewsCategory: String? {
+        switch self {
+        case .forYou:
+            return nil
+        case .general:
+            return "breaking-news"
+        case .politics:
+            return "nation"
+        case .business:
+            return "business"
+        case .technology:
+            return "technology"
+        case .entertainment:
+            return "entertainment"
+        case .sports:
+            return "sports"
+        case .science:
+            return "science"
+        case .health:
+            return "health"
+        case .history:
+            return nil
+        }
+    }
+    
+    /// RapidAPI category mapping for search queries
+    var rapidAPIQuery: String {
+        switch self {
+        case .forYou:
+            return "news"
+        case .general:
+            return "breaking news"
+        case .politics:
+            return "politics"
+        case .business:
+            return "business"
+        case .technology:
+            return "technology"
+        case .entertainment:
+            return "entertainment"
+        case .sports:
+            return "sports"
+        case .science:
+            return "science"
+        case .health:
+            return "health"
+        case .history:
+            return "history"
+        }
+    }
 }

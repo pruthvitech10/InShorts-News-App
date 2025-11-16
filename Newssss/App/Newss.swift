@@ -52,6 +52,11 @@ struct Newss: App {
                 FirebaseApp.configure()
             }
         }
+        
+        // Request location permission to show local news
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            LocationService.shared.startUpdatingLocation()
+        }
     }
     
     var body: some Scene {

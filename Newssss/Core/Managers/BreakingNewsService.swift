@@ -243,6 +243,10 @@ final class BreakingNewsService: ObservableObject {
     }
     
     private func fetchBreakingNewsFromProvider(_ provider: NewsAPIProvider) async throws -> [BreakingNewsItem] {
+        let locationService = LocationService.shared
+        let country = locationService.getNewsCountryCode()
+        let language = locationService.getNewsLanguageCode()
+        
         let categories: [NewsCategory] = [.general, .business, .technology, .politics]
         var allItems: [BreakingNewsItem] = []
         
@@ -250,8 +254,8 @@ final class BreakingNewsService: ObservableObject {
         case .rapidAPI:
             let articles = try await rapidAPIService.fetchLatestNews(
                 category: nil,
-                country: "us",
-                language: "en",
+                country: country.uppercased(),
+                language: language,
                 limit: Config.itemsPerCategory
             )
             allItems = articles.compactMap { convertToBreakingNews(article: $0, category: "general") }
@@ -259,8 +263,8 @@ final class BreakingNewsService: ObservableObject {
         case .newsDataHub:
             let articles = try await newsDataHubAPIService.fetchLatestNews(
                 category: nil,
-                country: "us",
-                language: "en",
+                country: country,
+                language: language,
                 limit: Config.itemsPerCategory
             )
             allItems = articles.compactMap { convertToBreakingNews(article: $0, category: "general") }
@@ -269,8 +273,8 @@ final class BreakingNewsService: ObservableObject {
             for category in categories.prefix(2) { // Limit categories for free tier
                 let articles = try await gNewsAPIService.fetchTopHeadlines(
                     category: category,
-                    country: "us",
-                    language: "en",
+                    country: country,
+                    language: language,
                     max: Config.itemsPerCategory
                 )
                 let items = articles.compactMap { convertToBreakingNews(article: $0, category: category.rawValue) }
@@ -281,8 +285,8 @@ final class BreakingNewsService: ObservableObject {
             for category in categories.prefix(2) { // Limit categories for free tier
                 let articles = try await newsDataIOService.fetchLatestNews(
                     category: category,
-                    country: nil,
-                    language: "en"
+                    country: country,
+                    language: language
                 )
                 let items = articles.compactMap { convertToBreakingNews(article: $0, category: category.rawValue) }
                 allItems.append(contentsOf: items)
@@ -298,6 +302,11 @@ final class BreakingNewsService: ObservableObject {
                 let items = articles.compactMap { convertToBreakingNews(article: $0, category: category.rawValue) }
                 allItems.append(contentsOf: items)
             }
+            
+        case .guardian, .nyTimes, .reddit, .hackerNews, .currents, .mediaStack:
+            // These premium sources don't support breaking news in this service
+            // They're handled by NewsAggregatorService
+            break
             
         case .all:
             break

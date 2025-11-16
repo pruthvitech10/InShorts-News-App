@@ -44,6 +44,11 @@ private struct AuthenticatedView: View {
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 0) {
+                // Location Debug Card
+                LocationDebugCard()
+                    .padding(.horizontal, 20)
+                    .padding(.top, 20)
+                
             // Profile card
                 // Profile header card
                 VStack(spacing: 20) {
@@ -306,6 +311,102 @@ private struct ReadingStats {
     var totalArticles: Int = 0
     var weeklyGrowth: Int = 0
     var categoryBreakdown: [(String, Int)] = []
+}
+
+// Location Debug Card
+
+struct LocationDebugCard: View {
+    @State private var detectedCountry = LocationService.shared.detectedCountry
+    @State private var showCountryPicker = false
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "location.circle.fill")
+                    .foregroundColor(.blue)
+                Text("Detected Location")
+                    .font(.headline)
+                Spacer()
+                Button("Change") {
+                    showCountryPicker = true
+                }
+                .font(.caption)
+                .foregroundColor(.blue)
+            }
+            
+            HStack {
+                Text("Country:")
+                    .foregroundColor(.secondary)
+                Spacer()
+                Text(detectedCountry.displayName)
+                    .fontWeight(.semibold)
+            }
+            
+            Text("News will be personalized for this location")
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+        .padding()
+        .background(Color(.secondarySystemBackground))
+        .cornerRadius(12)
+        .sheet(isPresented: $showCountryPicker) {
+            CountryPickerView(selectedCountry: $detectedCountry)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .locationDidUpdate)) { _ in
+            detectedCountry = LocationService.shared.detectedCountry
+        }
+    }
+}
+
+// Country Picker
+
+struct CountryPickerView: View {
+    @Binding var selectedCountry: LocationService.CountryInfo
+    @Environment(\.dismiss) var dismiss
+    
+    let countries = [
+        ("IT", "Italy"),
+        ("US", "United States"),
+        ("GB", "United Kingdom"),
+        ("FR", "France"),
+        ("DE", "Germany"),
+        ("ES", "Spain"),
+        ("IN", "India"),
+        ("JP", "Japan"),
+        ("AU", "Australia"),
+        ("CA", "Canada")
+    ]
+    
+    var body: some View {
+        NavigationView {
+            List(countries, id: \.0) { code, name in
+                Button(action: {
+                    LocationService.shared.updateCountryCode(code)
+                    selectedCountry = LocationService.shared.detectedCountry
+                    dismiss()
+                }) {
+                    HStack {
+                        Text(name)
+                        Spacer()
+                        if code.lowercased() == selectedCountry.code {
+                            Image(systemName: "checkmark")
+                                .foregroundColor(.blue)
+                        }
+                    }
+                }
+                .foregroundColor(.primary)
+            }
+            .navigationTitle("Select Country")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
 }
 
 // Helper extensions

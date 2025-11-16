@@ -48,6 +48,10 @@ actor APIKeyRotationService {
     private var newsAPIKeySet: KeySet?
     private var newsDataHubKeySet: KeySet?
     private var rapidAPIKeySet: KeySet?
+    private var guardianKeySet: KeySet?
+    private var nyTimesKeySet: KeySet?
+    private var currentsKeySet: KeySet?
+    private var mediaStackKeySet: KeySet?
     
     // Cache to avoid repeated keychain/plist reads
     private var keysCache: [String: [String]] = [:]
@@ -216,11 +220,119 @@ actor APIKeyRotationService {
         #endif
     }
     
+    // Guardian keys
+    
+    func getGuardianAPIKey() async throws -> String {
+        ensureKeySet(&guardianKeySet, service: "GUARDIAN_API_KEYS", displayName: "The Guardian")
+        return try guardianKeySet!.getCurrentKey()
+    }
+    
+    func getGuardianKey() async throws -> String {
+        try await getGuardianAPIKey()
+    }
+    
+    func rotateGuardianAPIKey() {
+        guardianKeySet?.rotate()
+        #if DEBUG
+        if let index = guardianKeySet?.currentIndex, let count = guardianKeySet?.keys.count {
+            Logger.debug("🔄 Guardian key rotated to index \(index)/\(count)", category: .network)
+        }
+        #endif
+    }
+    
+    func rotateGuardianKey() {
+        rotateGuardianAPIKey()
+    }
+    
+    // NYTimes keys
+    
+    func getNYTimesAPIKey() async throws -> String {
+        ensureKeySet(&nyTimesKeySet, service: "NYTIMES_API_KEYS", displayName: "New York Times")
+        return try nyTimesKeySet!.getCurrentKey()
+    }
+    
+    func getNYTimesKey() async throws -> String {
+        try await getNYTimesAPIKey()
+    }
+    
+    func rotateNYTimesAPIKey() {
+        nyTimesKeySet?.rotate()
+        #if DEBUG
+        if let index = nyTimesKeySet?.currentIndex, let count = nyTimesKeySet?.keys.count {
+            Logger.debug("🔄 NYTimes key rotated to index \(index)/\(count)", category: .network)
+        }
+        #endif
+    }
+    
+    func rotateNYTimesKey() {
+        rotateNYTimesAPIKey()
+    }
+    
+    // Currents keys
+    
+    func getCurrentsAPIKey() async throws -> String {
+        ensureKeySet(&currentsKeySet, service: "CURRENTS_API_KEYS", displayName: "Currents API")
+        return try currentsKeySet!.getCurrentKey()
+    }
+    
+    func getCurrentsKey() async throws -> String {
+        try await getCurrentsAPIKey()
+    }
+    
+    func rotateCurrentsAPIKey() {
+        currentsKeySet?.rotate()
+        #if DEBUG
+        if let index = currentsKeySet?.currentIndex, let count = currentsKeySet?.keys.count {
+            Logger.debug("🔄 Currents key rotated to index \(index)/\(count)", category: .network)
+        }
+        #endif
+    }
+    
+    func rotateCurrentsKey() {
+        rotateCurrentsAPIKey()
+    }
+    
+    // MediaStack keys
+    
+    func getMediaStackAPIKey() async throws -> String {
+        ensureKeySet(&mediaStackKeySet, service: "MEDIASTACK_API_KEYS", displayName: "MediaStack")
+        return try mediaStackKeySet!.getCurrentKey()
+    }
+    
+    func getMediaStackKey() async throws -> String {
+        try await getMediaStackAPIKey()
+    }
+    
+    func rotateMediaStackAPIKey() {
+        mediaStackKeySet?.rotate()
+        #if DEBUG
+        if let index = mediaStackKeySet?.currentIndex, let count = mediaStackKeySet?.keys.count {
+            Logger.debug("🔄 MediaStack key rotated to index \(index)/\(count)", category: .network)
+        }
+        #endif
+    }
+    
+    func rotateMediaStackKey() {
+        rotateMediaStackAPIKey()
+    }
+    
     // Bulk operations
     
     /// Get all available keys for a specific provider
     func getAvailableKeys(for provider: NewsAPIProvider) async throws -> [String] {
         switch provider {
+        case .guardian:
+            ensureKeySet(&guardianKeySet, service: "GUARDIAN_API_KEYS", displayName: "The Guardian")
+            return guardianKeySet?.keys ?? []
+        case .nyTimes:
+            ensureKeySet(&nyTimesKeySet, service: "NYTIMES_API_KEYS", displayName: "New York Times")
+            return nyTimesKeySet?.keys ?? []
+        case .currents:
+            ensureKeySet(&currentsKeySet, service: "CURRENTS_API_KEYS", displayName: "Currents API")
+            return currentsKeySet?.keys ?? []
+        case .mediaStack:
+            ensureKeySet(&mediaStackKeySet, service: "MEDIASTACK_API_KEYS", displayName: "MediaStack")
+            return mediaStackKeySet?.keys ?? []
         case .gnews:
             ensureKeySet(&gnewsKeySet, service: "GNEWS_API_KEYS", displayName: "GNews")
             return gnewsKeySet?.keys ?? []
@@ -236,6 +348,8 @@ actor APIKeyRotationService {
         case .rapidAPI:
             ensureKeySet(&rapidAPIKeySet, service: "RAPIDAPI_KEYS", displayName: "RapidAPI")
             return rapidAPIKeySet?.keys ?? []
+        case .hackerNews, .reddit:
+            return [] // No key needed
         case .all:
             return []
         }
@@ -252,6 +366,14 @@ actor APIKeyRotationService {
     /// Rotate key for a specific provider
     func rotateKey(for provider: NewsAPIProvider) {
         switch provider {
+        case .guardian:
+            rotateGuardianKey()
+        case .nyTimes:
+            rotateNYTimesKey()
+        case .currents:
+            rotateCurrentsKey()
+        case .mediaStack:
+            rotateMediaStackKey()
         case .gnews:
             rotateGNewsKey()
         case .newsDataIO:
@@ -262,6 +384,8 @@ actor APIKeyRotationService {
             rotateNewsDataHubKey()
         case .rapidAPI:
             rotateRapidAPIKey()
+        case .hackerNews, .reddit:
+            break // No keys to rotate
         case .all:
             break
         }
@@ -285,6 +409,14 @@ actor APIKeyRotationService {
         let currentIndex: Int
         
         switch provider {
+        case .guardian:
+            currentIndex = guardianKeySet?.currentIndex ?? 0
+        case .nyTimes:
+            currentIndex = nyTimesKeySet?.currentIndex ?? 0
+        case .currents:
+            currentIndex = currentsKeySet?.currentIndex ?? 0
+        case .mediaStack:
+            currentIndex = mediaStackKeySet?.currentIndex ?? 0
         case .gnews:
             currentIndex = gnewsKeySet?.currentIndex ?? 0
         case .newsDataIO:
@@ -295,6 +427,8 @@ actor APIKeyRotationService {
             currentIndex = newsDataHubKeySet?.currentIndex ?? 0
         case .rapidAPI:
             currentIndex = rapidAPIKeySet?.currentIndex ?? 0
+        case .hackerNews, .reddit:
+            currentIndex = 0 // No keys
         case .all:
             currentIndex = 0
         }
@@ -392,6 +526,14 @@ extension APIKeyRotationService {
         for attempt in 0..<maxRetries {
             do {
                 switch provider {
+                case .guardian:
+                    return try await getGuardianKey()
+                case .nyTimes:
+                    return try await getNYTimesKey()
+                case .currents:
+                    return try await getCurrentsKey()
+                case .mediaStack:
+                    return try await getMediaStackKey()
                 case .gnews:
                     return try await getGNewsKey()
                 case .newsDataIO:
@@ -402,6 +544,8 @@ extension APIKeyRotationService {
                     return try await getNewsDataHubAPIKey()
                 case .rapidAPI:
                     return try await getRapidAPIKey()
+                case .hackerNews, .reddit:
+                    throw NetworkError.apiKeyMissing(apiName: "\(provider.displayName) doesn't require API keys")
                 case .all:
                     throw NetworkError.apiKeyMissing(apiName: "Invalid provider: .all")
                 }

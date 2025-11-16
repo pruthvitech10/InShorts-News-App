@@ -6,11 +6,19 @@ class NewsAggregatorService {
     static let shared = NewsAggregatorService()
      
     // Initializer references fixed by ensuring they are inside the class
+    private let guardianAPIService = GuardianAPIService.shared
+    private let nyTimesAPIService = NYTimesAPIService.shared
+    private let redditAPIService = RedditAPIService.shared
+    private let hackerNewsAPIService = HackerNewsAPIService.shared
+    private let currentsAPIService = CurrentsAPIService.shared
+    private let mediaStackAPIService = MediaStackAPIService.shared
     private let newsAPIService = NewsAPIService.shared
     private let newsDataIOService = NewsDataIOService.shared
     private let gNewsAPIService = GNewsAPIService.shared
     private let newsDataHubAPIService = NewsDataHubAPIService.shared
     private let rapidAPIService = RapidAPIService.shared
+    private let sportsNewsService = SportsNewsService.shared
+    private let politicalNewsService = PoliticalNewsService.shared
     private let llmService = LLMService.shared
     private var enabledSources: Set<PopularSource> = Set(PopularSource.allCases)
     private var autoFetchInterval: TimeInterval = 3600 // 1 hour
@@ -26,12 +34,19 @@ class NewsAggregatorService {
         timeout: TimeInterval = 3.0
     ) async throws -> [Article] {
         // The service methods being referenced here must be the private helper methods below
+        // Priority order: Premium sources first for best quality
         let apiCalls: [(NewsCategory?) async throws -> [Article]] = [
-            { try await self.fetchFromRapidAPI(category: $0) },
-            { try await self.fetchFromNewsDataHub(category: $0) },
+            { try await self.fetchFromGuardian(category: $0) },
+            { try await self.fetchFromNYTimes(category: $0) },
+            { try await self.fetchFromReddit(category: $0) },
+            { try await self.fetchFromHackerNews(category: $0) },
+            { try await self.fetchFromCurrents(category: $0) },
+            { try await self.fetchFromMediaStack(category: $0) },
             { try await self.fetchFromGNews(category: $0) },
+            { try await self.fetchFromNewsDataHub(category: $0) },
             { try await self.fetchFromNewsDataIO(category: $0) },
-            { try await self.fetchFromNewsAPI(category: $0) }
+            { try await self.fetchFromNewsAPI(category: $0) },
+            { try await self.fetchFromRapidAPI(category: $0) }
         ]
         for apiCall in apiCalls {
             do {
@@ -92,7 +107,16 @@ class NewsAggregatorService {
          
         Logger.debug("🔄 AGGREGATOR: Category=\(category?.rawValue ?? "nil"), FetchFromAll=\(AppConfig.fetchFromAllAPIs)", category: .network)
          
-        if AppConfig.fetchFromAllAPIs {
+        // Special handling for sports category
+        if category == .sports {
+            Logger.debug("⚽ Fetching SPORTS news with location-aware team focus", category: .network)
+            let sportsArticles = try await fetchSportsNews()
+            allArticles = sportsArticles
+        } else if category == .politics {
+            Logger.debug("🏛️ Fetching POLITICS news with location-aware focus", category: .network)
+            let politicsArticles = try await fetchPoliticsNews()
+            allArticles = politicsArticles
+        } else if AppConfig.fetchFromAllAPIs {
             // FETCH FROM ALL APIs SIMULTANEOUSLY - Get the best news from everywhere!
             let articles: [Article] = try await fetchFromAllAPIsSimultaneously(category: category)
             allArticles = articles
@@ -156,6 +180,18 @@ class NewsAggregatorService {
         var tasks: [Task<[Article], Error>] = []
         for provider in AppConfig.enabledAPIs as [NewsAPIProvider] {
             switch provider {
+            case .guardian:
+                tasks.append(Task { try await self.fetchFromGuardian(category: category) })
+            case .nyTimes:
+                tasks.append(Task { try await self.fetchFromNYTimes(category: category) })
+            case .reddit:
+                tasks.append(Task { try await self.fetchFromReddit(category: category) })
+            case .hackerNews:
+                tasks.append(Task { try await self.fetchFromHackerNews(category: category) })
+            case .currents:
+                tasks.append(Task { try await self.fetchFromCurrents(category: category) })
+            case .mediaStack:
+                tasks.append(Task { try await self.fetchFromMediaStack(category: category) })
             case .newsAPI:
                 tasks.append(Task { try await self.fetchFromNewsAPI(category: category) })
             case .newsDataIO:
@@ -220,6 +256,9 @@ class NewsAggregatorService {
      
     // Get news from NewsAPI
     private func fetchFromNewsAPI(category: NewsCategory? = nil, page: Int = 1, pageSize: Int = 10) async throws -> [Article] {
+        let locationService = LocationService.shared
+        let country = locationService.getNewsCountryCode()
+        
         var articles: [Article] = []
         if let category = category {
             let fetchedArticles = try await newsAPIService.fetchTopHeadlines(category: category, page: page, pageSize: pageSize)
@@ -230,7 +269,7 @@ class NewsAggregatorService {
                 articles.append(contentsOf: filterByEnabledSources(fetchedArticles))
             }
         }
-        Logger.debug("📡 Fetched \(articles.count) articles from NewsAPI.org", category: .network)
+        Logger.debug("📡 Fetched \(articles.count) articles from NewsAPI.org (country: \(country))", category: .network)
         return articles
     }
      
@@ -296,6 +335,18 @@ class NewsAggregatorService {
                 var articles: [Article] = []
                  
                 switch provider {
+                case .guardian:
+                    articles = try await fetchFromGuardian(category: category)
+                case .nyTimes:
+                    articles = try await fetchFromNYTimes(category: category)
+                case .reddit:
+                    articles = try await fetchFromReddit(category: category)
+                case .hackerNews:
+                    articles = try await fetchFromHackerNews(category: category)
+                case .currents:
+                    articles = try await fetchFromCurrents(category: category)
+                case .mediaStack:
+                    articles = try await fetchFromMediaStack(category: category)
                 case .newsAPI:
                     articles = try await fetchFromNewsAPI(category: category)
                 case .newsDataIO:
@@ -338,55 +389,161 @@ class NewsAggregatorService {
      
     // Get news from NewsData.io
     private func fetchFromNewsDataIO(category: NewsCategory? = nil) async throws -> [Article] {
+        let locationService = LocationService.shared
+        let country = locationService.getNewsCountryCode()
+        let language = locationService.getNewsLanguageCode()
+        
         var articles: [Article] = []
          
         if let category = category {
-            articles = try await newsDataIOService.fetchLatestNews(category: category, country: "us", language: "en")
+            articles = try await newsDataIOService.fetchLatestNews(category: category, country: country, language: language)
         } else {
             let categories = Array(NewsCategory.allCases.prefix(3))
-            articles = try await newsDataIOService.fetchMultipleCategories(categories: categories, country: "us")
+            articles = try await newsDataIOService.fetchMultipleCategories(categories: categories, country: country)
         }
          
-        Logger.debug("📡 Fetched \(articles.count) articles from NewsData.io", category: .network)
+        Logger.debug("📡 Fetched \(articles.count) articles from NewsData.io (\(country), \(language))", category: .network)
         return articles
     }
      
     // Get news from RapidAPI
     private func fetchFromRapidAPI(category: NewsCategory? = nil) async throws -> [Article] {
+        let locationService = LocationService.shared
+        let country = locationService.getNewsCountryCode().uppercased()
+        let language = locationService.getNewsLanguageCode()
+        
         let articles = try await rapidAPIService.fetchLatestNews(
             category: category,
-            country: "us",
-            language: "en",
+            country: country,
+            language: language,
             limit: 10
         )
          
-        Logger.debug("📡 Fetched \(articles.count) articles from RapidAPI", category: .network)
+        Logger.debug("📡 Fetched \(articles.count) articles from RapidAPI (\(country), \(language))", category: .network)
         return articles
     }
      
     // Get news from NewsDataHub
     private func fetchFromNewsDataHub(category: NewsCategory? = nil) async throws -> [Article] {
+        let locationService = LocationService.shared
+        let country = locationService.getNewsCountryCode()
+        let language = locationService.getNewsLanguageCode()
+        
         let articles = try await newsDataHubAPIService.fetchLatestNews(
             category: category,
-            country: "us",
-            language: "en",
+            country: country,
+            language: language,
             limit: 10
         )
          
-        Logger.debug("📡 Fetched \(articles.count) articles from NewsDataHub", category: .network)
+        Logger.debug("📡 Fetched \(articles.count) articles from NewsDataHub (\(country), \(language))", category: .network)
         return articles
     }
      
     // Get news from GNews
     private func fetchFromGNews(category: NewsCategory? = nil) async throws -> [Article] {
+        let locationService = LocationService.shared
+        let country = locationService.getNewsCountryCode()
+        let language = locationService.getNewsLanguageCode()
+        
         let articles = try await gNewsAPIService.fetchTopHeadlines(
             category: category,
-            country: "us",
-            language: "en",
+            country: country,
+            language: language,
             max: 10
         )
          
-        Logger.debug("📡 Fetched \(articles.count) articles from GNews", category: .network)
+        Logger.debug("📡 Fetched \(articles.count) articles from GNews (\(country), \(language))", category: .network)
+        return articles
+    }
+    
+    // Get news from The Guardian (Premium)
+    private func fetchFromGuardian(category: NewsCategory? = nil) async throws -> [Article] {
+        let articles: [Article]
+        
+        if let category = category {
+            articles = try await guardianAPIService.fetchByCategory(category, pageSize: 20)
+        } else {
+            articles = try await guardianAPIService.fetchLatestNews(pageSize: 30)
+        }
+        
+        Logger.debug("📡 Fetched \(articles.count) articles from The Guardian ⭐", category: .network)
+        return articles
+    }
+    
+    // Get news from Hacker News (Tech)
+    private func fetchFromHackerNews(category: NewsCategory? = nil) async throws -> [Article] {
+        // Hacker News is primarily tech news, so only fetch for tech/general categories
+        guard category == nil || category == .technology || category == .general || category == .forYou else {
+            return []
+        }
+        
+        let articles = try await hackerNewsAPIService.fetchTopStories(limit: 30)
+        
+        Logger.debug("📡 Fetched \(articles.count) articles from Hacker News 💻", category: .network)
+        return articles
+    }
+    
+    // Get news from Reddit (Viral)
+    private func fetchFromReddit(category: NewsCategory? = nil) async throws -> [Article] {
+        let articles: [Article]
+        
+        if let category = category {
+            articles = try await redditAPIService.fetchByCategory(category, limit: 20)
+        } else {
+            // Fetch from multiple news subreddits for variety
+            articles = try await redditAPIService.fetchNewsFromMultipleSubreddits(limit: 30)
+        }
+        
+        Logger.debug("📡 Fetched \(articles.count) articles from Reddit 🔥", category: .network)
+        return articles
+    }
+    
+    // Get news from New York Times (Premium)
+    private func fetchFromNYTimes(category: NewsCategory? = nil) async throws -> [Article] {
+        let articles: [Article]
+        
+        if let category = category {
+            articles = try await nyTimesAPIService.fetchByCategory(category, limit: 20)
+        } else {
+            articles = try await nyTimesAPIService.fetchTopStories(limit: 30)
+        }
+        
+        Logger.debug("📡 Fetched \(articles.count) articles from New York Times 🏆", category: .network)
+        return articles
+    }
+    
+    // Get news from Currents API (Global)
+    private func fetchFromCurrents(category: NewsCategory? = nil) async throws -> [Article] {
+        let locationService = LocationService.shared
+        let language = locationService.getNewsLanguageCode()
+        
+        let articles: [Article]
+        
+        if let category = category {
+            articles = try await currentsAPIService.fetchByCategory(category, language: language, limit: 20)
+        } else {
+            articles = try await currentsAPIService.fetchLatestNews(language: language, limit: 25)
+        }
+        
+        Logger.debug("📡 Fetched \(articles.count) articles from Currents API 🌍", category: .network)
+        return articles
+    }
+    
+    // Get news from MediaStack (7,500+ sources)
+    private func fetchFromMediaStack(category: NewsCategory? = nil) async throws -> [Article] {
+        let locationService = LocationService.shared
+        let country = locationService.getNewsCountryCode()
+        
+        let articles: [Article]
+        
+        if let category = category {
+            articles = try await mediaStackAPIService.fetchByCategory(category, countries: country, limit: 20)
+        } else {
+            articles = try await mediaStackAPIService.fetchLatestNews(countries: country, limit: 25)
+        }
+        
+        Logger.debug("📡 Fetched \(articles.count) articles from MediaStack 📰", category: .network)
         return articles
     }
      
@@ -451,6 +608,40 @@ class NewsAggregatorService {
             UserDefaults.standard.set(sourcesData, forKey: "aggregator_sources")
         }
         UserDefaults.standard.set(autoFetchInterval, forKey: "aggregator_interval")
+    }
+    
+    // MARK: - Sports News Integration
+    
+    /// Fetch sports news with location-aware team prioritization
+    /// If user is in Naples/Italy, prioritizes Napoli and Serie A news
+    private func fetchSportsNews() async throws -> [Article] {
+        Logger.debug("⚽ Fetching sports news from SportsNewsService", category: .network)
+        
+        do {
+            let sportsArticles = try await sportsNewsService.fetchSportsNews(limit: 30)
+            Logger.debug("✅ Fetched \(sportsArticles.count) sports articles", category: .network)
+            return sportsArticles
+        } catch {
+            Logger.error("❌ Failed to fetch sports news: \(error)", category: .network)
+            throw error
+        }
+    }
+    
+    // MARK: - Political News Integration
+    
+    /// Fetch political news with location-aware prioritization
+    /// If user is in Italy, prioritizes Giorgia Meloni and Italian politics
+    private func fetchPoliticsNews() async throws -> [Article] {
+        Logger.debug("🏛️ Fetching political news from PoliticalNewsService", category: .network)
+        
+        do {
+            let politicsArticles = try await politicalNewsService.fetchPoliticalNews(limit: 30)
+            Logger.debug("✅ Fetched \(politicsArticles.count) political articles", category: .network)
+            return politicsArticles
+        } catch {
+            Logger.error("❌ Failed to fetch political news: \(error)", category: .network)
+            throw error
+        }
     }
 }
 

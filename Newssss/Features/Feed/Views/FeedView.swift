@@ -167,6 +167,12 @@ struct FeedView: View {
                             await viewModel.refreshArticles()
                         }
                     }
+                    .onReceive(NotificationCenter.default.publisher(for: .locationDidUpdate)) { _ in
+                        Logger.debug("📍 Location changed - refreshing feed with new location", category: .general)
+                        Task {
+                            await viewModel.refreshArticles()
+                        }
+                    }
                     .sheet(item: $selectedArticle) { article in
                         ArticleDetailView(article: article)
                     }

@@ -13,8 +13,8 @@ class LocationService: NSObject, ObservableObject {
     static let shared = LocationService()
     
     private let locationManager = CLLocationManager()
-    private var currentCountryCode: String = "us" // Default to US
-    private var currentLanguageCode: String = "en" // Default to English
+    private var currentCountryCode: String = "it"  // Default to Italy (Europe)
+    private var currentLanguageCode: String = "en"
     
     // Country information
     struct CountryInfo {
@@ -23,12 +23,12 @@ class LocationService: NSObject, ObservableObject {
         var displayName: String { "\(name) (\(code.uppercased()))" }
     }
     
-    private(set) var detectedCountry: CountryInfo = CountryInfo(code: "us", name: "United States")
+    private(set) var detectedCountry: CountryInfo = CountryInfo(code: "it", name: "Italy")
     
     private override init() {
         super.init()
         setupLocationManager()
-        loadCachedLocation()
+        detectLocationFromLocale()
     }
     
     private func setupLocationManager() {
@@ -36,20 +36,21 @@ class LocationService: NSObject, ObservableObject {
         locationManager.desiredAccuracy = kCLLocationAccuracyReduced
     }
     
-    private func loadCachedLocation() {
-        // Load cached values from UserDefaults
-        if let country = UserDefaults.standard.string(forKey: "cachedCountryCode") {
-            currentCountryCode = country.lowercased()
-            updateCountryInfo(code: currentCountryCode)
+    /// Detect location from device locale/region settings (works in simulator!)
+    private func detectLocationFromLocale() {
+        // Get country from device region settings
+        if let regionCode = Locale.current.region?.identifier {
+            currentCountryCode = regionCode.lowercased()
+            let countryName = Locale.current.localizedString(forRegionCode: regionCode) ?? "Unknown"
+            detectedCountry = CountryInfo(code: currentCountryCode, name: countryName)
+            
+            Logger.debug("📍 Detected from locale: \(countryName) (\(regionCode))", category: .general)
         }
         
-        if let language = UserDefaults.standard.string(forKey: "cachedLanguageCode") {
-            currentLanguageCode = language.lowercased()
-        } else {
-            // Fallback to device language
-            currentLanguageCode = Locale.current.language.languageCode?.identifier ?? "en"
-            UserDefaults.standard.set(currentLanguageCode, forKey: "cachedLanguageCode")
-        }
+        // Get language from device settings
+        currentLanguageCode = Locale.current.language.languageCode?.identifier ?? "en"
+        
+        Logger.debug("🌍 Country: \(currentCountryCode.uppercased()), Language: \(currentLanguageCode)", category: .general)
     }
     
     func startUpdatingLocation() {
@@ -81,7 +82,15 @@ class LocationService: NSObject, ObservableObject {
         guard lowercasedCode != currentCountryCode else { return }
         
         currentCountryCode = lowercasedCode
-        UserDefaults.standard.set(lowercasedCode, forKey: "cachedCountryCode")
+        
+        // Update country info
+        let countryName = Locale.current.localizedString(forRegionCode: code.uppercased()) ?? "Unknown"
+        detectedCountry = CountryInfo(code: lowercasedCode, name: countryName)
+        
+        Logger.debug("📍 Location updated: \(countryName) (\(code.uppercased()))", category: .general)
+        
+        // Post notification that location was updated
+        NotificationCenter.default.post(name: .locationDidUpdate, object: nil)
     }
     
     /// Updates the preferred language code
@@ -90,7 +99,19 @@ class LocationService: NSObject, ObservableObject {
         guard lowercasedCode != currentLanguageCode else { return }
         
         currentLanguageCode = lowercasedCode
-        UserDefaults.standard.set(lowercasedCode, forKey: "cachedLanguageCode")
+        
+        Logger.debug("🌍 Language updated: \(code)", category: .general)
+        
+        // Post notification that location was updated
+        NotificationCenter.default.post(name: .locationDidUpdate, object: nil)
+    }
+    
+    /// Manually set country and language (useful for Italian users or testing)
+    func setCountryAndLanguage(country: String, language: String) {
+        updateCountryCode(country)
+        updateLanguageCode(language)
+        
+        Logger.debug("📍 Manually set location to \(country.uppercased()), language: \(language)", category: .general)
     }
 }
 
@@ -135,10 +156,11 @@ extension LocationService: CLLocationManagerDelegate {
     
     private func updateCountryInfo(code: String, name: String? = nil) {
         currentCountryCode = code.lowercased()
-        UserDefaults.standard.set(currentCountryCode, forKey: "cachedCountryCode")
         
         let countryName = name ?? Locale.current.localizedString(forRegionCode: code.uppercased()) ?? "Unknown"
         detectedCountry = CountryInfo(code: code, name: countryName)
+        
+        Logger.debug("📍 GPS location detected: \(countryName) (\(code.uppercased()))", category: .general)
     }
     
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {

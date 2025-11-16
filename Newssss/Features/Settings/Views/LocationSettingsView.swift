@@ -8,8 +8,10 @@
 import SwiftUI
 
 struct LocationSettingsView: View {
+    @StateObject private var locationService = LocationService.shared
     @State private var selectedCountry: SupportedCountry = .italy
     @State private var searchText = ""
+    @State private var showSuccessMessage = false
     
     private var filteredCountries: [SupportedCountry] {
         if searchText.isEmpty {
@@ -33,6 +35,28 @@ struct LocationSettingsView: View {
         .navigationTitle("News Location")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear(perform: loadSavedCountry)
+        .overlay(
+            Group {
+                if showSuccessMessage {
+                    VStack {
+                        Spacer()
+                        HStack {
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundColor(.green)
+                            Text("Location updated to \(selectedCountry.displayName)")
+                                .font(.subheadline)
+                        }
+                        .padding()
+                        .background(Color(.systemBackground))
+                        .cornerRadius(10)
+                        .shadow(radius: 10)
+                        .padding(.bottom, 50)
+                    }
+                    .transition(.move(edge: .bottom))
+                    .animation(.spring(), value: showSuccessMessage)
+                }
+            }
+        )
     }
     
     private var searchBar: some View {
@@ -141,12 +165,36 @@ struct LocationSettingsView: View {
     
     private func selectCountry(_ country: SupportedCountry) {
         selectedCountry = country
-        // Save selected country - LocationService will use it
+        
+        // Update LocationService with country and its primary language
+        locationService.setCountryAndLanguage(
+            country: country.rawValue,
+            language: country.primaryLanguage
+        )
+        
+        // Save selected country for persistence
         UserDefaults.standard.set(country.rawValue, forKey: "selectedCountryCode")
-        Logger.debug("Country set to: \(country.displayName)", category: .general)
+        UserDefaults.standard.set(country.rawValue, forKey: "cachedCountryCode")
+        UserDefaults.standard.set(country.primaryLanguage, forKey: "cachedLanguageCode")
+        
+        Logger.debug("Country set to: \(country.displayName) (\(country.rawValue)), language: \(country.primaryLanguage)", category: .general)
+        
+        // Show success feedback
+        showSuccessMessage = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            showSuccessMessage = false
+        }
     }
     
     private func loadSavedCountry() {
+        // Try to load from LocationService first
+        let currentCode = locationService.getNewsCountryCode()
+        if let country = SupportedCountry(rawValue: currentCode) {
+            selectedCountry = country
+            return
+        }
+        
+        // Fallback to saved preference
         if let savedCode = UserDefaults.standard.string(forKey: "selectedCountryCode"),
            let country = SupportedCountry(rawValue: savedCode) {
             selectedCountry = country

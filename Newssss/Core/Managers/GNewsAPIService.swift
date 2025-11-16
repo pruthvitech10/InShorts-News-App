@@ -192,35 +192,7 @@ class GNewsAPIService {
     }
 }
 
-// : - Category Mapping
-extension NewsCategory {
-    var gNewsCategory: String? {
-        switch self {
-        case .general:
-            return "general"
-        case .politics:
-            return "nation"  // GNews uses "nation" for politics
-        case .business:
-            return "business"
-        case .technology:
-            return "technology"
-        case .entertainment:
-            return "entertainment"
-        case .sports:
-            return "sports"
-        case .science:
-            return "science"
-        case .health:
-            return "health"
-        case .history:
-            return nil  // History is local-only, not fetched from API
-        default:
-            return nil
-        }
-    }
-}
-
-// GNewsAPIError
+// GNews Response Models
 
 // : - GNews Error
 enum GNewsAPIError: Error, LocalizedError {

@@ -19,6 +19,7 @@ public struct Article: Codable, Identifiable, Hashable {
     let publishedAt: String
     let content: String?
     var aiSummary: String? // AI-generated summary (on-device)
+    var metadata: [String: Any]? // Additional metadata (e.g., Reddit score, comments)
     
     var publishedDate: Date? {
         let formatter = ISO8601DateFormatter()

@@ -280,21 +280,3 @@ enum RapidAPIError: Error, LocalizedError {
         }
     }
 }
-
-// Category Extension
-extension NewsCategory {
-    var rapidAPIQuery: String {
-        switch self {
-        case .general: return "news"
-        case .business: return "business"
-        case .entertainment: return "entertainment"
-        case .health: return "health"
-        case .science: return "science"
-        case .sports: return "sports"
-        case .technology: return "technology"
-        case .politics: return "politics"
-        case .history: return "history"
-        default: return "news"
-        }
-    }
-}

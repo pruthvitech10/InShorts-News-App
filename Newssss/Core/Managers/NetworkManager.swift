@@ -12,6 +12,8 @@ import Foundation
 
 public enum NetworkError: Error {
     case invalidURL
+    case invalidRequest
+    case invalidResponse
     case noData
     case decodingError
     case serverError(statusCode: Int)
@@ -24,6 +26,10 @@ public enum NetworkError: Error {
         switch self {
         case .invalidURL:
             return "Invalid URL"
+        case .invalidRequest:
+            return "Invalid request"
+        case .invalidResponse:
+            return "Invalid response from server"
         case .noData:
             return "No data received from server"
         case .decodingError:
@@ -47,6 +53,10 @@ public enum NetworkError: Error {
         switch self {
         case .invalidURL:
             return "Something went wrong with the request"
+        case .invalidRequest:
+            return "Invalid request. Please try again"
+        case .invalidResponse:
+            return "Unable to process server response"
         case .noData:
             return "Unable to fetch news. Please check your internet connection"
         case .decodingError:
