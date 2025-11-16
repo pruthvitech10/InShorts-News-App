@@ -1,7 +1,7 @@
 import Foundation
 
 protocol NewsAggregatorServiceProtocol {
-    func fetchAggregatedNews(category: NewsCategory?, useLocationBased: Bool) async throws -> [EnhancedArticle]
+    func fetchAggregatedNews(category: NewsCategory?, useLocationBased: Bool) async throws -> [Article]
 }
 
 protocol NewsAPIServiceProtocol {

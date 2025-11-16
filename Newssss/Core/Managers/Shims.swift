@@ -120,12 +120,6 @@ actor LLMService {
         self.apiKey = apiKey
     }
 
-    // Provide minimal implementations used by the app
-    func enhanceArticle(_ article: Article) async throws -> EnhancedArticle {
-        // Return a basic EnhancedArticle if type exists
-        return EnhancedArticle(article: article)
-    }
-
     func summarizeArticle(_ article: Article) async throws -> String {
         return article.description ?? article.title
     }

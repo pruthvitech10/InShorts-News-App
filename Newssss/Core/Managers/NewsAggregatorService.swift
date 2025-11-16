@@ -84,7 +84,7 @@ class NewsAggregatorService {
     }
      
     // Main function to get news from all sources
-    func fetchAggregatedNews(category: NewsCategory? = nil, useLocationBased: Bool = true) async throws -> [EnhancedArticle] {
+    func fetchAggregatedNews(category: NewsCategory? = nil, useLocationBased: Bool = true) async throws -> [Article] {
         var allArticles: [Article] = []
          
         Logger.debug("🔄 AGGREGATOR: Category=\(category?.rawValue ?? "nil"), FetchFromAll=\(AppConfig.fetchFromAllAPIs)", category: .network)
@@ -132,13 +132,7 @@ class NewsAggregatorService {
         
         Logger.debug("✅ Total fresh unique articles: \(sortedArticles.count)", category: .network)
         
-        // NO AI ENHANCEMENT - Too slow for 200+ articles
-        // Just wrap articles in EnhancedArticle
-        let enhancedArticles = sortedArticles.map { EnhancedArticle(article: $0) }
-        
-        Logger.debug("✅ Returning \(enhancedArticles.count) articles (no AI enhancement for speed)", category: .network)
-        
-        return enhancedArticles
+        return sortedArticles
     }
     
     // Only keep recent articles
@@ -221,7 +215,7 @@ class NewsAggregatorService {
     
      
     // Background auto-refresh
-    func startAutoFetch(completion: @escaping ([EnhancedArticle]) -> Void) {
+    func startAutoFetch(completion: @escaping ([Article]) -> Void) {
         stopAutoFetch()
          
         autoFetchTimer = Timer.scheduledTimer(withTimeInterval: autoFetchInterval, repeats: true) { [weak self] _ in
