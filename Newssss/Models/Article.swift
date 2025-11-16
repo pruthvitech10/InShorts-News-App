@@ -18,8 +18,6 @@ public struct Article: Codable, Identifiable, Hashable {
     let urlToImage: String?
     let publishedAt: String
     let content: String?
-    var aiSummary: String? // AI-generated summary (on-device)
-    var metadata: [String: Any]? // Additional metadata (e.g., Reddit score, comments)
     
     var publishedDate: Date? {
         let formatter = ISO8601DateFormatter()
@@ -39,14 +37,7 @@ public struct Article: Codable, Identifiable, Hashable {
         return formatter.date(from: publishedAt)
     }
     
-    /// Create a copy of the article with an AI summary
-    nonisolated func withSummary(_ summary: String) -> Article {
-        var copy = self
-        copy.aiSummary = summary
-        return copy
-    }
-    
-    init(source: Source, author: String?, title: String, description: String?, url: String, urlToImage: String?, publishedAt: String, content: String?, aiSummary: String? = nil) {
+    init(source: Source, author: String?, title: String, description: String?, url: String, urlToImage: String?, publishedAt: String, content: String?) {
         self.id = UUID()
         self.source = source
         self.author = author
@@ -56,12 +47,11 @@ public struct Article: Codable, Identifiable, Hashable {
         self.urlToImage = urlToImage
         self.publishedAt = publishedAt
         self.content = content
-        self.aiSummary = aiSummary
     }
     
     // Custom coding keys for API response
     enum CodingKeys: String, CodingKey {
-        case source, author, title, description, url, urlToImage, publishedAt, content, aiSummary
+        case source, author, title, description, url, urlToImage, publishedAt, content
     }
     
     public init(from decoder: Decoder) throws {
@@ -75,7 +65,6 @@ public struct Article: Codable, Identifiable, Hashable {
         self.urlToImage = try container.decodeIfPresent(String.self, forKey: .urlToImage)
         self.publishedAt = try container.decode(String.self, forKey: .publishedAt)
         self.content = try container.decodeIfPresent(String.self, forKey: .content)
-        self.aiSummary = try container.decodeIfPresent(String.self, forKey: .aiSummary)
     }
     
     public func encode(to encoder: Encoder) throws {
@@ -88,7 +77,6 @@ public struct Article: Codable, Identifiable, Hashable {
         try container.encodeIfPresent(urlToImage, forKey: .urlToImage)
         try container.encode(publishedAt, forKey: .publishedAt)
         try container.encodeIfPresent(content, forKey: .content)
-        try container.encodeIfPresent(aiSummary, forKey: .aiSummary)
     }
     
     public func hash(into hasher: inout Hasher) {

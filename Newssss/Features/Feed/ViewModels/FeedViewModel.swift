@@ -154,49 +154,6 @@ class FeedViewModel: ObservableObject {
         }
     }
 
-    // Generate AI summaries in background
-    private func startBackgroundSummarization(for fetchedArticles: [Article]) {
-        currentSummarizationTask = Task { [weak self] in
-            guard let self = self else { return }
-            
-            do {
-                Logger.debug("🤖 Starting AI summarization for \(fetchedArticles.count) articles", category: .viewModel)
-                
-                var summarizedArticles = fetchedArticles
-                
-                for (index, article) in fetchedArticles.enumerated() {
-                    // Check if task was cancelled
-                    guard !Task.isCancelled else {
-                        Logger.debug("⚠️ Summarization cancelled", category: .viewModel)
-                        return
-                    }
-                    
-                    // Skip if already has summary
-                    guard article.aiSummary == nil else { continue }
-                    
-                    // Get text to summarize
-                    let text = article.content ?? article.description ?? article.title
-                    
-                    // Generate summary
-                    do {
-                        let summary = try await ArticleSummarizationService.shared.summarize(text)
-                        summarizedArticles[index] = article.withSummary(summary)
-                        
-                        // Update UI on main actor
-                        await MainActor.run { [weak self] in
-                            guard let self = self else { return }
-                            self.articles = summarizedArticles
-                        }
-                    } catch {
-                        Logger.error("Failed to summarize article '\(article.title.prefix(30))...': \(error.localizedDescription)", category: .viewModel)
-                        // Continue with next article
-                    }
-                }
-                
-                Logger.debug("✅ AI summarization completed", category: .viewModel)
-            }
-        }
-    }
 
     // Load more articles - SILENTLY (no loading indicator)
     func loadMoreArticles() async {
