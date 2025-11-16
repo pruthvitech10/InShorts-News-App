@@ -19,6 +19,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication,
                     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
         configureFirebase()
+        configureBackgroundRefresh()
         return true
     }
     
@@ -35,6 +36,13 @@ class AppDelegate: NSObject, UIApplicationDelegate {
             FirebaseApp.configure()
             Logger.debug("Firebase configured successfully", category: .general)
         }
+    }
+    
+    /// Configure background refresh service
+    private func configureBackgroundRefresh() {
+        BackgroundRefreshService.shared.registerBackgroundTasks()
+        BackgroundRefreshService.shared.startAutoRefresh()
+        Logger.debug("🔄 Background refresh configured", category: .general)
     }
 }
 
@@ -71,10 +79,20 @@ struct Newss: App {
 
 struct MainTabView: View {
     @State private var authManager: AuthenticationManager? = nil
+    @State private var showOnboarding = !UserDefaults.standard.bool(forKey: "hasSeenOnboarding")
     
     var body: some View {
-        // Skip authentication completely - go straight to app
-        authenticatedView
+        ZStack {
+            // Main app content
+            authenticatedView
+            
+            // Onboarding overlay (shows on first launch)
+            if showOnboarding {
+                OnboardingView(showOnboarding: $showOnboarding)
+                    .transition(.opacity)
+                    .zIndex(999)
+            }
+        }
     }
     
     private var authenticatedView: some View {

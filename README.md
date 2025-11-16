@@ -1,320 +1,265 @@
-# InShorts News App 📰
+# 🇮🇹 InShorts - Italian News App
 
-Hey! So this is a news app I built that's actually pretty cool. It's like having a smart friend who knows exactly what news you care about based on where you are.
+**Lightning-fast Italian news aggregator with hybrid memory architecture**
 
-## What Makes This Different?
+A modern iOS news app delivering fresh Italian news across 10 categories with instant loading, smart categorization, and zero cache pollution.
 
-You know how most news apps just throw random articles at you? This one actually gets you. Living in Naples? You'll see Napoli football news first. In Rome? Italian politics with Giorgia Meloni shows up at the top. It's location-smart, which is honestly game-changing.
+## ⚡ Key Features
 
-## The Cool Stuff
+### 🚀 Hybrid Memory Architecture
+- **Instant Loading:** 0.1 second category switching
+- **Smart Pre-warming:** Background refresh every 20 minutes  
+- **No Disk Cache:** Pure in-memory storage, cleared on app close
+- **Always Fresh:** Direct RSS feed fetching from 76 Italian sources
 
-### It Knows Where You Are 📍
+### 🎯 10 News Categories
+1. **📰 General** - Everyday news (gold rates, prices, fashion, real estate)
+2. **��️ Politics** - 206 articles from 9 verified sources
+3. **💼 Business** - Economy, markets, finance (8 sources)
+4. **💻 Technology** - Tech news, innovation (8 sources)
+5. **🎬 Entertainment** - Cinema, music, TV (7 sources)
+6. **⚽ Sports** - Calcio, Serie A, F1 (7 sources)
+7. **🌍 World** - International news (8 sources)
+8. **⚖️ Crime** - Cronaca, justice (8 sources)
+9. **🚗 Automotive** - Cars, motorcycles, racing (7 sources)
+10. **🍝 Lifestyle** - Food, travel, wellness (7 sources)
 
-The app detects your location and shows you news that actually matters to you:
+### 🔒 Ultra-Strict Category Enforcement
+- **100+ keywords per category** for validation
+- **Zero cross-contamination** between categories
+- **Priority-based assignment** (Politics > Sports > Tech > etc.)
+- **Duplicate removal** - each article appears in ONLY ONE category
 
-**In Italy (Naples, Rome, Milan, etc.):**
-- Italian politics first (Meloni, Italian government, Parliament)
-- Napoli football news if you're near Naples
-- Serie A updates
-- EU news that affects Italy
-- Plus global news so you're not in a bubble
+### 🔍 Smart Search & Discovery
+- **Instant Search:** Search through 1,500+ articles in memory
+- **Breaking News:** Top 10 most recent articles from important categories
+- **Quick Access:** My Feed, All News, Top Stories, Trending
+- **Category Shortcuts:** Politics, Sports, Technology, Entertainment
 
-**Anywhere Else:**
-- Local teams and politics for your country
-- Still get global coverage
-- Everything's personalized
+## 📊 Performance
 
-### Sports That Get You ⚽
+**Speed:**
+- First launch: 5-8 seconds (cold start)
+- Subsequent launches: 0.1 seconds (instant!)
+- Category switch: 0.1 seconds
+- Search: Instant (in-memory)
 
-If you're in Naples, you're probably a Napoli fan, right? The app knows this:
-- SSC Napoli news shows up first
-- Serie A standings and fixtures
-- Champions League when Napoli's playing
-- Other Italian teams (Inter, Milan, Juve, Roma)
-- Plus Premier League, La Liga, etc.
+**Capacity:**
+- ~1,500 articles in memory
+- 76 RSS feed sources
+- 10 categories
+- Background refresh every 20 minutes
 
-It's not just scores - it's actual news, transfers, match analysis, the whole deal.
+## 🏗️ Architecture
 
-### Politics Without the BS 🏛️
+### Core Services
+- **NewsMemoryStore:** In-memory article storage
+- **BackgroundRefreshService:** Auto-refresh every 20 minutes
+- **CategoryEnforcer:** Strict category validation with 100+ keywords
+- **ItalianNewsService:** Unified news fetching interface
 
-Living in Italy means you need to know what Meloni's doing. The app gets it:
-- Giorgia Meloni and Italian government news
-- Parliament decisions that affect you
-- EU politics (because Italy's in the EU)
-- Global politics so you can talk to anyone
+### Category Services (Dedicated)
+- ItalianPoliticsNewsService (9 sources)
+- ItalianSportsNewsService (7 sources)
+- ItalianTechnologyNewsService (8 sources)
+- ItalianEntertainmentNewsService (7 sources)
+- ItalianBusinessNewsService (8 sources)
+- ItalianWorldNewsService (8 sources)
+- ItalianCrimeNewsService (8 sources)
+- ItalianAutomotiveNewsService (7 sources)
+- ItalianLifestyleNewsService (7 sources)
+- ItalianGeneralNewsService (8 sources)
 
-**And here's the best part:** You get news in BOTH Italian and English!
-- Italian articles from real Italian sources (Currents, MediaStack)
-- English articles about Italy (The Guardian)
-- Just tap to translate the Italian ones
+### Key Technologies
+- **SwiftUI** - Modern iOS UI framework
+- **Async/Await** - Concurrent news fetching
+- **RSS Parsing** - Direct feed parsing
+- **Combine** - Reactive programming
+- **Background Tasks** - iOS BGTaskScheduler
 
-Perfect for learning Italian or just understanding what locals are reading.
+## 🚀 Getting Started
 
-## Where the News Comes From
+### Prerequisites
+- Xcode 14.0+
+- iOS 15.0+
+- Swift 5.7+
 
-I hooked up 6 different news sources so you get the full picture:
+### Installation
 
-### The Premium Ones (Already Working!)
-
-**The Guardian** 🏆
-- British newspaper, super reliable
-- Great for politics, sports, world news
-- 5,000 articles per day (free tier)
-- Status: ✅ Working right now
-
-**Currents API** 🌍
-- Global news in multiple languages
-- Italian news in Italian!
-- 600 articles per day
-- Status: ✅ Working right now
-
-**MediaStack** 📰
-- 7,500+ news sources worldwide
-- Italian politics in Italian
-- 500 articles per month
-- Status: ✅ Working right now
-
-**Reddit** 🔥
-- Viral news and trending topics
-- Tech stuff, breaking news
-- No API key needed
-- Status: ✅ Working right now
-
-**Hacker News** 💻
-- Tech community news
-- Startup stuff, programming
-- No API key needed
-- Status: ✅ Working right now
-
-**New York Times** 🗽 (Optional)
-- World-class journalism
-- US and international politics
-- 4,000 articles per day
-- Status: ⏳ Add your key if you want it
-
-So right now, 5 sources are working. Add NYT key and you'll have all 6.
-
-## The Smart Features
-
-### Language Mix
-- English articles about Italy (The Guardian)
-- Italian articles in Italian (Currents, MediaStack)
-- Translate button for Italian articles
-- Learn Italian while staying informed
-
-### No Duplicate News
-The app is smart enough to know when different sources are reporting the same story. You won't see "Meloni announces reform" 10 times from different sources.
-
-### Fresh News Only
-Nothing older than 24 hours. Who cares about yesterday's news?
-
-### Sorted by What Matters
-- Your location's news first
-- Then regional stuff (EU for Italy)
-- Then global news
-- All sorted by newest
-
-## How to Set It Up
-
-### What's Already Working (No Setup!)
-1. The Guardian - already configured
-2. Currents API - already configured
-3. MediaStack - already configured
-4. Reddit - no key needed
-5. Hacker News - no key needed
-
-Just run the app and you're good to go!
-
-### If You Want New York Times (Optional)
-
-Takes 3 minutes:
-1. Go to https://developer.nytimes.com/get-started
-2. Sign up (free, no credit card)
-3. Create an app
-4. Enable "Top Stories API" and "Article Search API"
-5. Copy your API key
-6. Add it to `Config.xcconfig`:
-   ```
-   NYTIMES_API_KEYS = your-key-here
-   ```
-7. Rebuild the app
-
-That's it. Now you have all 6 sources.
-
-## Real Examples
-
-### Politics Category in Italy:
-```
-🇮🇹 Meloni annuncia nuove riforme economiche
-   (Italian article - tap to translate)
-   
-🏛️ Italian Parliament Approves 2024 Budget
-   (English article from The Guardian)
-   
-🇪🇺 Italy-EU Summit on Migration Policy
-   (EU news affecting Italy)
-   
-🌍 Biden Meets European Leaders at G7
-   (Global politics)
+1. Clone the repository
+```bash
+git clone https://github.com/pruthvitech10/InShorts-News-App.git
+cd InShorts-News-App
 ```
 
-### Sports Category in Naples:
-```
-⚽ Napoli Defeats Inter 3-1 in Serie A
-   (Your local team first!)
-   
-🏆 Champions League: Napoli vs Barcelona Preview
-   (Big matches)
-   
-🇮🇹 Serie A Standings: Napoli Tops the Table
-   (League updates)
-   
-⚽ Premier League: Arsenal vs Man City
-   (Global football)
+2. Open in Xcode
+```bash
+open Newssss.xcodeproj
 ```
 
-## Why This Matters
+3. Build and Run
+- Press `Cmd + R`
+- App will fetch news on first launch
+- Background refresh starts automatically
 
-Look, if you're living in Italy, you need to:
-- Know what Meloni's doing (politics affects your life)
-- Follow Napoli if you're in Naples (everyone talks about it)
-- Understand EU decisions (Italy's in the EU)
-- Stay connected globally (you're not from Italy originally, right?)
+### No API Keys Required!
+All news sources use public RSS feeds - just run the app!
 
-This app does all of that. It's like having a local friend who reads everything and tells you what matters.
+## 📱 Features
 
-## The Tech Stuff (If You Care)
+### Feed View
+- Swipeable card interface
+- Infinite scrolling
+- Auto-load more at article 80
+- Bookmark articles
+- Share articles
+- Reading history
 
-Built with:
-- SwiftUI (iOS app)
-- MVVM architecture
-- Async/await for API calls
-- Location services for smart content
-- Multiple API integrations
-- Smart caching and deduplication
+### Search View
+- Instant search through all articles
+- Breaking news section
+- Category shortcuts
+- Search suggestions
 
-APIs used:
-- The Guardian API
-- Currents API
-- MediaStack API
-- Reddit API
-- Hacker News API
-- New York Times API (optional)
+### Category View
+- My Feed (personalized)
+- All News (all categories)
+- Top Stories (important news)
+- Trending (popular topics)
 
-## Capacity
+### Settings
+- Category selection
+- Notification preferences
+- App version info
 
-With all sources configured:
-- ~100,000 requests per day
-- That's like... unlimited for personal use
-- Seriously, you won't hit the limits
+## 🔧 Configuration
 
-## What You Get
+### Background Refresh Interval
+Default: 20 minutes
 
-**Right Now (5 sources working):**
-- Italian politics in Italian and English
-- Napoli football news (if in Naples/Italy)
-- Serie A and Champions League
-- EU politics
-- Global news
-- Tech news from Hacker News
-- Viral content from Reddit
-
-**If You Add NYT (6 sources):**
-- Everything above
-- Plus world-class US journalism
-- Better international coverage
-- More diverse perspectives
-
-## Running the App
-
-### Quick Start (Easiest Way!)
-
-1. Open the project in Xcode
-2. Press `Cmd + R`
-3. Go to **Profile** tab (bottom right)
-4. At the top, you'll see **"Detected Location"**
-5. Tap **"Change"** and select **"Italy"**
-6. **IMPORTANT:** Now swipe the categories at the top:
-   - Swipe to **Politics** → See Meloni, Italian government, Parliament
-   - Swipe to **Sports** → See Napoli, Serie A, Italian football
-   - "For You" shows mixed global news
-7. Done! You'll see Italian news first!
-
-### Alternative: Change Device Region
-
-**On Real iPhone:**
-1. Go to **Settings** → **General** → **Language & Region**
-2. Tap **Region**
-3. Select **Italy**
-4. Restart the app
-
-**On Simulator:**
-1. In Simulator, go to **Settings** → **General** → **Language & Region**
-2. Tap **Region**
-3. Select **Italy**
-4. Restart the app
-
-### What Happens
-
-The app will:
-- **Default to Italy** (European news by default!)
-- Show Italian politics first (Meloni, Italian government)
-- Show Napoli news in Sports category
-- Mix in EU and global news
-- Give you Italian articles in Italian + English articles
-
-**No caching!** Change location anytime in the Profile tab.
-
-**Note:** The app now defaults to Italy/Europe instead of US. Perfect for European users!
-
-## Console Output (What You'll See)
-
-```
-📍 User location: Italy (IT)
-🏛️ Fetching POLITICS news with location-aware focus
-🇮🇹 Fetching Italian politics (Meloni government)
-✅ Fetched 5 Italian language articles from Currents
-✅ Fetched 5 Italian language articles from MediaStack
-✅ Fetched 10 English articles from The Guardian
-⚽ Fetching SPORTS news with location-aware team focus
-🔵 Prioritizing SSC Napoli news...
-✅ Fetched 30 articles total
+To change, edit `BackgroundRefreshService.swift`:
+```swift
+private let refreshInterval: TimeInterval = 20 * 60 // 20 minutes
 ```
 
-## Future Ideas (Maybe?)
+### Memory Store
+Articles stored in RAM, cleared on app close.
 
-- Push notifications for Napoli matches
-- More Italian news sources
-- Regional news (Campania, Lazio, etc.)
-- Italian language learning mode
-- Politician profiles (Meloni, Mattarella, etc.)
-- Live match scores
+To view stats:
+```swift
+let totalArticles = NewsMemoryStore.shared.getTotalArticleCount()
+let categoryCount = NewsMemoryStore.shared.getCategoryCount()
+```
 
-But honestly, it's pretty complete as is.
+## 📝 Code Structure
 
-## The Bottom Line
+```
+Newssss/
+├── Core/
+│   ├── Services/
+│   │   ├── NewsMemoryStore.swift
+│   │   ├── BackgroundRefreshService.swift
+│   │   ├── CategoryEnforcer.swift
+│   │   └── CategoryValidator.swift
+│   ├── Managers/
+│   │   ├── ItalianNewsService.swift
+│   │   ├── ItalianPoliticsNewsService.swift
+│   │   ├── ItalianSportsNewsService.swift
+│   │   └── ... (other category services)
+│   └── UI/
+│       └── Components/
+│           ├── SwipeableCardView.swift
+│           └── CardStackView.swift
+├── Features/
+│   ├── Feed/
+│   │   ├── Views/
+│   │   │   ├── FeedView.swift
+│   │   │   └── CategoryFeedView.swift
+│   │   └── ViewModels/
+│   │       └── FeedViewModel.swift
+│   └── Search/
+│       ├── Views/
+│       │   └── SearchView.swift
+│       └── ViewModels/
+│           └── SearchViewModel.swift
+└── Models/
+    ├── Article.swift
+    └── Category.swift
+```
 
-This isn't just another news app. It's built for someone living in Italy who wants to:
-- Stay informed about Italian politics
-- Follow local sports (Napoli!)
-- Understand EU decisions
-- Connect globally
-- Read in both Italian and English
+## 🎨 UI Components
 
-It's smart, it's fast, and it actually gets what you need.
+### SwipeableCardView
+- Tinder-style swipe interface
+- Left swipe: Skip article
+- Right swipe: Mark as seen
+- Tap: Read full article
+- Bookmark button
 
-## Questions?
+### CardStackView
+- Manages card stack
+- Infinite scrolling
+- Auto-load more articles
+- Smooth animations
 
-The code is pretty straightforward. Check out:
-- `NewsAggregatorService.swift` - Main news fetching
-- `PoliticalNewsService.swift` - Italian politics logic
-- `SportsNewsService.swift` - Napoli football logic
-- `LocationService.swift` - Location detection
+## 🔍 Search Features
 
-Everything's commented and makes sense.
+### Keyword Matching
+Searches in:
+- Article titles
+- Article descriptions
+- Article content
+
+### Breaking News
+Shows top 10 most recent articles from:
+- Politics
+- World
+- Business
+- General
+
+## 📊 Category Keywords
+
+Each category validated with 100+ keywords:
+
+**Politics:** governo, parlamento, politica, elezioni, ministro...
+**Sports:** calcio, serie a, champions, gol, allenatore...
+**Technology:** tecnologia, smartphone, app, software, ai...
+**Entertainment:** cinema, film, musica, spettacolo, tv...
+**Business:** economia, azienda, borsa, finanza, mercato...
+**Crime:** cronaca, crimine, polizia, arresto, processo...
+**Automotive:** auto, ferrari, moto, formula 1, pilota...
+**World:** mondo, internazionale, world, global, paese...
+**Lifestyle:** moda, cucina, viaggio, benessere, casa...
+
+## 🛠️ Development
+
+### Running Tests
+```bash
+xcodebuild test -scheme Newssss -destination 'platform=iOS Simulator,name=iPhone 15'
+```
+
+### Building for Release
+```bash
+xcodebuild archive -scheme Newssss -archivePath build/Newssss.xcarchive
+```
+
+## 📄 License
+
+This project is licensed under the MIT License.
+
+## 👤 Author
+
+**Pruthvirajsinh Punada**
+- GitHub: [@pruthvitech10](https://github.com/pruthvitech10)
+
+## 🙏 Acknowledgments
+
+- Italian news sources for providing public RSS feeds
+- SwiftUI community for UI inspiration
+- iOS community for best practices
 
 ---
 
-Built with ☕ for people living in Italy who want news that actually matters to them.
+**Built with ❤️ for Italian news readers**
 
-**Forza Napoli! 🔵⚪ Forza Italia! 🇮🇹**
+🇮🇹 **Forza Italia!**

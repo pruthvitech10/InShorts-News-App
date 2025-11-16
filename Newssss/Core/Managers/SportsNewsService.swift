@@ -15,7 +15,7 @@ import Foundation
 class SportsNewsService {
     static let shared = SportsNewsService()
     
-    private let guardianService = GuardianAPIService.shared
+    private let italianNewsService = ItalianNewsService.shared
     private let locationService = LocationService.shared
     
     private init() {}
@@ -24,130 +24,39 @@ class SportsNewsService {
     
     /// Fetch sports news with location-aware team prioritization
     func fetchSportsNews(limit: Int = 20) async throws -> [Article] {
-        let userLocation = locationService.detectedCountry
-        var articles: [Article] = []
+        Logger.debug("⚽ Fetching Italian sports news", category: .network)
         
-        // Fetch from The Guardian Sports section
-        let guardianSports = try await fetchGuardianSports()
-        articles.append(contentsOf: guardianSports)
-        
-        // If user is in Italy, prioritize Serie A and Italian teams
-        if userLocation.code.uppercased() == "IT" {
-            Logger.debug("🇮🇹 User in Italy - prioritizing Italian football", category: .network)
-            let italianFootball = try await fetchItalianFootballNews()
-            articles.insert(contentsOf: italianFootball, at: 0)
-        }
-        
-        // Remove duplicates
-        let uniqueArticles = removeDuplicates(from: articles)
+        // Fetch from Italian sports sources ONLY
+        let italianSports = try await italianNewsService.fetchItalianNews(category: "sports", limit: 100)
         
         // Sort by date
-        let sorted = uniqueArticles.sorted { $0.publishedAt > $1.publishedAt }
+        let sorted = italianSports.sorted { $0.publishedAt > $1.publishedAt }
         
         return Array(sorted.prefix(limit))
     }
     
-    /// Fetch Napoli-specific news (when in Naples/Italy)
+    /// All sports methods now use Italian sources only
     func fetchNapoliNews() async throws -> [Article] {
-        var articles: [Article] = []
-        
-        // Fetch Guardian football section (will include Napoli news)
-        let napoliNews = try await guardianService.fetchLatestNews(
-            section: "football",
-            pageSize: 20
-        )
-        // Filter for Napoli-related articles
-        let napoliFiltered = napoliNews.filter { article in
-            let title = article.title.lowercased()
-            let description = (article.description ?? "").lowercased()
-            return title.contains("napoli") || description.contains("napoli")
-        }
-        articles.append(contentsOf: napoliFiltered)
-        
-        // Add metadata to mark as Napoli-specific
-        return articles.map { article in
-            var modified = article
-            modified.metadata = (article.metadata ?? [:]).merging([
-                "team": "SSC Napoli",
-                "league": "Serie A",
-                "sport": "Football"
-            ]) { _, new in new }
-            return modified
-        }
+        return try await italianNewsService.fetchItalianNews(category: "sports", limit: 50)
     }
     
-    /// Fetch Serie A news
     func fetchSerieANews() async throws -> [Article] {
-        let serieANews = try await guardianService.fetchLatestNews(
-            section: "football",
-            pageSize: 20
-        )
-        // Filter for Serie A-related articles
-        let serieAFiltered = serieANews.filter { article in
-            let title = article.title.lowercased()
-            let description = (article.description ?? "").lowercased()
-            return title.contains("serie a") || title.contains("italian") || 
-                   description.contains("serie a") || description.contains("italian")
-        }
-        
-        return serieANews.map { article in
-            var modified = article
-            modified.metadata = (article.metadata ?? [:]).merging([
-                "league": "Serie A",
-                "sport": "Football"
-            ]) { _, new in new }
-            return modified
-        }
+        return try await italianNewsService.fetchItalianNews(category: "sports", limit: 50)
     }
     
-    /// Fetch Champions League news
     func fetchChampionsLeagueNews() async throws -> [Article] {
-        let clNews = try await guardianService.fetchLatestNews(
-            section: "football",
-            pageSize: 20
-        )
-        // Filter for Champions League articles
-        let clFiltered = clNews.filter { article in
-            let title = article.title.lowercased()
-            let description = (article.description ?? "").lowercased()
-            return title.contains("champions league") || description.contains("champions league")
-        }
-        
-        return clNews.map { article in
-            var modified = article
-            modified.metadata = (article.metadata ?? [:]).merging([
-                "tournament": "Champions League",
-                "sport": "Football"
-            ]) { _, new in new }
-            return modified
-        }
+        return try await italianNewsService.fetchItalianNews(category: "sports", limit: 50)
     }
     
-    /// Fetch general football news
     func fetchFootballNews() async throws -> [Article] {
-        let footballNews = try await guardianService.fetchLatestNews(
-            section: "football",
-            pageSize: 20
-        )
-        
-        return footballNews.map { article in
-            var modified = article
-            modified.metadata = (article.metadata ?? [:]).merging([
-                "sport": "Football"
-            ]) { _, new in new }
-            return modified
-        }
+        return try await italianNewsService.fetchItalianNews(category: "sports", limit: 50)
     }
     
     // MARK: - Private Helper Methods
     
     private func fetchGuardianSports() async throws -> [Article] {
-        // Fetch from Guardian's sport section
-        let sports = try await guardianService.fetchLatestNews(
-            section: "sport",
-            pageSize: 20
-        )
-        return sports
+        // Guardian removed - return empty array
+        return []
     }
     
     private func fetchItalianFootballNews() async throws -> [Article] {
@@ -171,25 +80,7 @@ class SportsNewsService {
             Logger.error("Failed to fetch Serie A news: \(error)", category: .network)
         }
         
-        // Priority 3: Italian teams in Europe
-        do {
-            let europeanNews = try await guardianService.fetchLatestNews(
-                section: "football",
-                pageSize: 20
-            )
-            // Filter for Italian teams
-            let italianTeamsNews = europeanNews.filter { article in
-                let title = article.title.lowercased()
-                let description = (article.description ?? "").lowercased()
-                let italianTeams = ["napoli", "inter", "milan", "juventus", "roma", "atalanta", "lazio"]
-                return italianTeams.contains(where: { team in
-                    title.contains(team) || description.contains(team)
-                })
-            }
-            italianNews.append(contentsOf: italianTeamsNews.prefix(3))
-        } catch {
-            Logger.error("Failed to fetch Italian teams news: \(error)", category: .network)
-        }
+        // Priority 3: Italian teams in Europe (Guardian removed - using Italian sources only)
         
         return italianNews
     }

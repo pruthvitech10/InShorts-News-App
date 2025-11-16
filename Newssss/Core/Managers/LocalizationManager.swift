@@ -120,8 +120,6 @@ struct LocalizedStrings {
             "category.sports": "Sports",
             "category.entertainment": "Entertainment",
             "category.politics": "Politics",
-            "category.science": "Science",
-            "category.health": "Health",
             "category.general": "General",
         ],
         
@@ -182,8 +180,6 @@ struct LocalizedStrings {
             "category.sports": "Sport",
             "category.entertainment": "Intrattenimento",
             "category.politics": "Politica",
-            "category.science": "Scienza",
-            "category.health": "Salute",
             "category.general": "Generale",
         ],
         
@@ -244,8 +240,6 @@ struct LocalizedStrings {
             "category.sports": "Deportes",
             "category.entertainment": "Entretenimiento",
             "category.politics": "Política",
-            "category.science": "Ciencia",
-            "category.health": "Salud",
             "category.general": "General",
         ],
         
@@ -306,8 +300,6 @@ struct LocalizedStrings {
             "category.sports": "Sports",
             "category.entertainment": "Divertissement",
             "category.politics": "Politique",
-            "category.science": "Science",
-            "category.health": "Santé",
             "category.general": "Général",
         ],
     ]

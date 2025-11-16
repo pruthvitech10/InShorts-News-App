@@ -35,12 +35,12 @@ enum FeedType {
         }
     }
 
-    var category: NewsCategory {
+    var categories: [String] {
         switch self {
-        case .myFeed: return NewsCategory.general
-        case .allNews: return NewsCategory.general
-        case .topStories: return NewsCategory.general
-        case .trending: return NewsCategory.general
+        case .myFeed: return ["general"] // User's personalized feed
+        case .allNews: return ["general", "politics", "business", "technology", "entertainment", "sports", "world", "crime", "automotive", "lifestyle"] // All categories
+        case .topStories: return ["politics", "world", "business"] // Important news
+        case .trending: return ["entertainment", "sports", "technology"] // Popular topics
         }
     }
 }
@@ -115,21 +115,11 @@ struct CategoryFeedView: View {
                     .cornerRadius(10)
                 }
                 Spacer()
-            } else if viewModel.articles.isEmpty {
-                Spacer()
-                VStack(spacing: 16) {
-                    Image(systemName: "newspaper")
-                        .font(.system(size: 60))
-                        .foregroundColor(.secondary)
-                    Text("No articles available")
-                        .font(.title3)
-                        .foregroundColor(.secondary)
-                }
-                Spacer()
             } else {
+                // No empty state - with memory store, there's always content!
                 // Card stack view (requires iOS 26+)
                 GeometryReader { geometry in
-                    CardStackView(articles: viewModel.articles, category: feedType.category)
+                    CardStackView(articles: viewModel.articles, category: .general)
                         .frame(width: geometry.size.width, height: geometry.size.height)
                 }
             }
@@ -157,47 +147,46 @@ class CategoryFeedViewModel: ObservableObject {
         isLoading = true
         errorMessage = nil
         
-        // No cache - always fresh!
-    
-    do {
-        let fetchedEnhancedArticles: [EnhancedArticle]
-
-        switch feedType {
-            case .myFeed:
-                // Personalized feed based on user preferences (location-based)
-                fetchedEnhancedArticles = try await aggregatorService.fetchAggregatedNews(
-                    category: feedType.category,
-                    useLocationBased: true
-                )
-
-            case .allNews:
-                // All news from all categories
-                fetchedEnhancedArticles = try await aggregatorService.fetchAggregatedNews(
-                    category: feedType.category,
-                    useLocationBased: false
-                )
-
-            case .topStories:
-                fetchedEnhancedArticles = try await aggregatorService.fetchAggregatedNews(
-                    category: feedType.category,
-                    useLocationBased: false
-                )
-
-            case .trending:
-                fetchedEnhancedArticles = try await aggregatorService.fetchAggregatedNews(
-                    category: feedType.category,
-                    useLocationBased: false
-                )
+        Logger.debug("📰 Loading \(feedType.title) from memory store...", category: .viewModel)
+        
+        // HYBRID: Load from memory store (instant!)
+        var allArticles: [Article] = []
+        
+        for categoryKey in feedType.categories {
+            if let categoryArticles = await NewsMemoryStore.shared.getArticles(for: categoryKey) {
+                allArticles.append(contentsOf: categoryArticles)
+                Logger.debug("✅ Loaded \(categoryArticles.count) articles from \(categoryKey)", category: .viewModel)
             }
-
-            // Extract Article objects from EnhancedArticle
-            let fetchedArticles = fetchedEnhancedArticles.map { $0.article }
-            articles = fetchedArticles
-
-            ErrorLogger.logInfo("Loaded \(articles.count) articles for \(feedType.title)")
+        }
+        
+        if !allArticles.isEmpty {
+            // ⚡ INSTANT: Show articles from memory
+            articles = allArticles.shuffled() // Mix articles for variety
+            isLoading = false
+            Logger.debug("⚡ INSTANT: Showing \(articles.count) articles for \(feedType.title)", category: .viewModel)
+            return
+        }
+        
+        // No memory - fetch from internet (first time only)
+        Logger.debug("📡 No memory, fetching from internet...", category: .viewModel)
+        
+        do {
+            let italianNewsService = ItalianNewsService.shared
+            
+            for categoryKey in feedType.categories {
+                let categoryArticles = try await italianNewsService.fetchItalianNews(category: categoryKey, limit: Int.max)
+                allArticles.append(contentsOf: categoryArticles)
+                
+                // Store in memory for next time
+                await NewsMemoryStore.shared.store(articles: categoryArticles, for: categoryKey)
+            }
+            
+            articles = allArticles.shuffled()
+            Logger.debug("✅ Loaded \(articles.count) articles for \(feedType.title)", category: .viewModel)
+            
         } catch {
             errorMessage = error.localizedDescription
-            ErrorLogger.log(error, context: "CategoryFeed - \(feedType.title)")
+            Logger.error("❌ Failed to load \(feedType.title): \(error)", category: .viewModel)
         }
 
         isLoading = false

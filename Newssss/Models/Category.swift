@@ -9,30 +9,24 @@ import Foundation
 
 // Category
 enum NewsCategory: String, CaseIterable, Codable {
-    case forYou
     case general
     case politics
     case business
     case technology
     case entertainment
     case sports
-    case science
-    case health
+    case world
+    case crime
+    case automotive
+    case lifestyle
     case history
     
     var displayName: String {
-        switch self {
-        case .forYou:
-            return "For You"
-        default:
-            return rawValue.capitalized
-        }
+        return rawValue.capitalized
     }
     
     var icon: String {
         switch self {
-        case .forYou:
-            return "person.crop.circle"
         case .general:
             return "newspaper"
         case .politics:
@@ -45,10 +39,14 @@ enum NewsCategory: String, CaseIterable, Codable {
             return "theatermasks"
         case .sports:
             return "sportscourt"
-        case .science:
-            return "flask"
-        case .health:
-            return "cross.case"
+        case .world:
+            return "globe.europe.africa"
+        case .crime:
+            return "exclamationmark.shield"
+        case .automotive:
+            return "car"
+        case .lifestyle:
+            return "fork.knife"
         case .history:
             return "clock.arrow.circlepath"
         }
@@ -58,8 +56,6 @@ enum NewsCategory: String, CaseIterable, Codable {
     /// This property maps our categories to NewsData.io's categories
     var newsDataIOCategory: String? {
         switch self {
-        case .forYou:
-            return nil // "For You" is a personalized feed, not a direct API category
         case .general:
             return "top"  // NewsData.io uses "top" instead of "general"
         case .politics:
@@ -72,10 +68,14 @@ enum NewsCategory: String, CaseIterable, Codable {
             return "entertainment"
         case .sports:
             return "sports"
-        case .science:
-            return "science"
-        case .health:
-            return "health"
+        case .world:
+            return "world"
+        case .crime:
+            return "crime"
+        case .automotive:
+            return "auto"
+        case .lifestyle:
+            return "lifestyle"
         case .history:
             return nil  // History is local-only, not fetched from API
         }
@@ -85,8 +85,6 @@ enum NewsCategory: String, CaseIterable, Codable {
     /// GNews uses "topic" parameter with specific values
     var gNewsCategory: String? {
         switch self {
-        case .forYou:
-            return nil
         case .general:
             return "breaking-news"
         case .politics:
@@ -99,10 +97,14 @@ enum NewsCategory: String, CaseIterable, Codable {
             return "entertainment"
         case .sports:
             return "sports"
-        case .science:
-            return "science"
-        case .health:
-            return "health"
+        case .world:
+            return "world"
+        case .crime:
+            return "nation"
+        case .automotive:
+            return "business"
+        case .lifestyle:
+            return "entertainment"
         case .history:
             return nil
         }
@@ -111,8 +113,6 @@ enum NewsCategory: String, CaseIterable, Codable {
     /// RapidAPI category mapping for search queries
     var rapidAPIQuery: String {
         switch self {
-        case .forYou:
-            return "news"
         case .general:
             return "breaking news"
         case .politics:
@@ -125,10 +125,14 @@ enum NewsCategory: String, CaseIterable, Codable {
             return "entertainment"
         case .sports:
             return "sports"
-        case .science:
-            return "science"
-        case .health:
-            return "health"
+        case .world:
+            return "world news"
+        case .crime:
+            return "crime"
+        case .automotive:
+            return "automotive"
+        case .lifestyle:
+            return "lifestyle"
         case .history:
             return "history"
         }

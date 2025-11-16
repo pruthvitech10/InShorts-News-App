@@ -19,11 +19,14 @@ struct CardStackView: View {
     @State private var currentIndex: Int = 0
     @State private var showDetail: Bool = false
     @State private var selectedArticle: Article?
+    @State private var hasTriggeredLoadMore = false
 
     var onBookmark: ((Article) -> Void)?
     var onSkip: ((Article) -> Void)?
+    var onLoadMore: (() -> Void)?
 
     private let maxVisibleCards = 3
+    private let seenArticlesService = SeenArticlesService.shared
 
     var body: some View {
         GeometryReader { geometry in
@@ -57,23 +60,7 @@ struct CardStackView: View {
                     }
                 }
 
-                // No more articles message
-                if currentIndex >= articles.count && !articles.isEmpty {
-                    VStack(spacing: 20) {
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 80))
-                            .foregroundColor(.green)
-
-                        Text("You're all caught up!")
-                            .font(.title2)
-                            .fontWeight(.bold)
-
-                        Text("Check back later for more news")
-                            .font(.body)
-                            .foregroundColor(.secondary)
-                    }
-                    .padding()
-                }
+                // No "caught up" message - user requirement
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
@@ -98,34 +85,64 @@ struct CardStackView: View {
 
     // Handle left/right swipes
     private func handleSwipeLeft(article: Article) {
-        // Only track in history - NO bookmark
+        // Mark as seen - user will NEVER see this article again
+        seenArticlesService.markAsSeen(article)
+        
+        // Track skip in history
         Task { @MainActor in
             SwipeHistoryService.shared.addSwipedArticle(article)
-            // Track skip for personalization
-            PersonalizationService.shared.trackSkip(article)
         }
         
         onSkip?(article)
         withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
             currentIndex += 1
         }
-        Logger.debug("⬅️ Skipped article", category: .general)
+        
+        // Load more when getting close to end (infinite scrolling)
+        checkAndLoadMore()
+        
+        Logger.debug("⬅️ Skipped article - marked as seen forever", category: .general)
     }
 
     private func handleSwipeRight(article: Article) {
+        // Mark as seen - user will NEVER see this article again
+        seenArticlesService.markAsSeen(article)
+        
         // Only track in history - NO bookmark
         // Bookmark only happens when user taps bookmark button
         Task { @MainActor in
             SwipeHistoryService.shared.addSwipedArticle(article)
-            // Track as read (positive signal, but not bookmark)
-            PersonalizationService.shared.trackArticleRead(article, readingTime: 5.0)
         }
         
         onSkip?(article) // Just move to next card
         withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
             currentIndex += 1
         }
-        Logger.debug("➡️ Swiped right (read)", category: .general)
+        
+        // Load more when getting close to end (infinite scrolling)
+        checkAndLoadMore()
+        
+        Logger.debug("➡️ Swiped right (read) - marked as seen forever", category: .general)
+    }
+    
+    // Check if we need to load more articles (infinite scrolling)
+    private func checkAndLoadMore() {
+        let currentArticleNumber = currentIndex + 1 // Article number (1-based)
+        let totalArticles = articles.count
+        
+        // When user reaches article 80 (out of 100), silently fetch next batch
+        // So by the time they reach article 100, new articles are ready
+        // Only trigger once per batch
+        if currentArticleNumber >= 80 && !hasTriggeredLoadMore {
+            hasTriggeredLoadMore = true
+            Logger.debug("🔄 User at article \(currentArticleNumber)/\(totalArticles) - fetching next batch silently...", category: .general)
+            onLoadMore?()
+        }
+        
+        // Reset flag when new articles arrive (total count increases significantly)
+        if totalArticles > currentArticleNumber + 50 {
+            hasTriggeredLoadMore = false
+        }
     }
     
     // Share article

@@ -106,7 +106,7 @@ struct SearchView: View {
                         // Word Wheel Game Banner removed - feature disabled
 
                         // Notifications Section
-                        NotificationsSection()
+                        NotificationsSection(viewModel: viewModel)
                             .padding(.horizontal, 16)
 
                         // Trending searches
@@ -119,8 +119,8 @@ struct SearchView: View {
 
                             VStack(spacing: 12) {
                                 HStack(spacing: 12) {
-                                    TrendingSearchButton(text: "Technology", icon: "laptopcomputer") {
-                                        viewModel.query = "Technology"
+                                    TrendingSearchButton(text: "Politics", icon: "building.columns") {
+                                        viewModel.query = "Politics"
                                         Task { await viewModel.search() }
                                     }
                                     TrendingSearchButton(text: "Sports", icon: "sportscourt") {
@@ -130,12 +130,12 @@ struct SearchView: View {
                                 }
 
                                 HStack(spacing: 12) {
-                                    TrendingSearchButton(text: "Business", icon: "briefcase") {
-                                        viewModel.query = "Business"
+                                    TrendingSearchButton(text: "Technology", icon: "laptopcomputer") {
+                                        viewModel.query = "Technology"
                                         Task { await viewModel.search() }
                                     }
-                                    TrendingSearchButton(text: "Science", icon: "atom") {
-                                        viewModel.query = "Science"
+                                    TrendingSearchButton(text: "Entertainment", icon: "theatermasks") {
+                                        viewModel.query = "Entertainment"
                                         Task { await viewModel.search() }
                                     }
                                 }
@@ -395,10 +395,10 @@ struct SearchResultRow: View {
     }
 }
 
-// Breaking news section
+// Breaking news section - DISABLED (service removed)
 
 struct NotificationsSection: View {
-    @StateObject private var breakingNewsService = BreakingNewsService.shared
+    @ObservedObject var viewModel: SearchViewModel
     @State private var showAllNotifications = false
 
     var body: some View {
@@ -409,7 +409,7 @@ struct NotificationsSection: View {
                         .font(.title3)
                         .fontWeight(.bold)
 
-                    if breakingNewsService.isLoading {
+                    if viewModel.isLoadingBreaking {
                         ProgressView()
                             .scaleEffect(0.7)
                     } else {
@@ -436,140 +436,114 @@ struct NotificationsSection: View {
                 }
             }
 
-            if breakingNewsService.isLoading {
-                HStack {
-                    ProgressView()
-                    Text("Loading breaking news...")
+            // Show breaking news articles
+            if viewModel.breakingNews.isEmpty && !viewModel.isLoadingBreaking {
+                VStack(spacing: 8) {
+                    Image(systemName: "newspaper.fill")
+                        .font(.title2)
+                        .foregroundColor(.secondary)
+                    
+                    Text("No breaking news available")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
                 .frame(maxWidth: .infinity)
                 .padding()
-            } else if breakingNewsService.breakingNews.isEmpty {
-                // Show error or empty state when loading is done but no news
-                VStack(spacing: 8) {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .font(.title2)
-                        .foregroundColor(.orange)
-                    
-                    if let error = breakingNewsService.error {
-                        Text(error)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
-                    } else {
-                        Text("No breaking news available")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        
-                        Text("Try refreshing or check your API keys")
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
-                    }
-                }
-                .frame(maxWidth: .infinity)
-                .padding()
             } else {
-                VStack(spacing: 12) {
-                    ForEach(Array(breakingNewsService.breakingNews.prefix(3))) { newsItem in
-                        NotificationRow(newsItem: newsItem)
-                    }
+                ForEach(viewModel.breakingNews.prefix(3), id: \.url) { article in
+                    BreakingNewsRow(article: article)
                 }
             }
 
             Button(action: {
                 Task {
-                    await breakingNewsService.fetchBreakingNews(forceRefresh: true)
+                    await viewModel.loadBreakingNews()
                 }
             }) {
                 HStack {
                     Image(systemName: "arrow.clockwise")
                     Text("Refresh")
                 }
-                .font(.caption)
+                .fontWeight(.semibold)
                 .foregroundColor(.blue)
             }
         }
-        // Breaking news view all removed - feature disabled
+        .task {
+            await viewModel.loadBreakingNews()
+        }
     }
 }
 
 // Breaking news row
 
-struct NotificationRow: View {
-    let newsItem: BreakingNewsItem
-    @State private var showSafari = false
-
+struct BreakingNewsRow: View {
+    let article: Article
+    
     var body: some View {
-        Button(action: {
-            showSafari = true
-        }) {
-            HStack(spacing: 12) {
-                // Icon based on category
-                Image(systemName: newsItem.categoryIcon)
-                    .font(.title3)
-                    .foregroundColor(priorityColor)
-                    .frame(width: 56, height: 56)
-                    .background(priorityColor.opacity(0.1))
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-
-                // Content
-                VStack(alignment: .leading, spacing: 4) {
-                    // Priority badge
-                    if newsItem.priority == .critical {
-                        Text("BREAKING")
-                            .font(.system(size: 9, weight: .bold))
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(Color.red)
-                            .cornerRadius(4)
-                    }
-
-                    Text(newsItem.title)
-                        .font(.subheadline)
-                        .foregroundColor(.primary)
-                        .lineLimit(2)
-                        .multilineTextAlignment(.leading)
-
-                    HStack {
-                        Text(newsItem.source.uppercased())
-                            .font(.system(size: 10))
-                            .fontWeight(.medium)
-                            .foregroundColor(.secondary)
-
-                        Text("•")
-                            .foregroundColor(.secondary)
-
-                        Text(newsItem.timeAgo)
+        HStack(spacing: 12) {
+            // Article image
+            if let imageURL = article.urlToImage, let url = URL(string: imageURL) {
+                AsyncImage(url: url) { image in
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                } placeholder: {
+                    Rectangle()
+                        .fill(Color.gray.opacity(0.2))
+                }
+                .frame(width: 60, height: 60)
+                .cornerRadius(8)
+            } else {
+                Rectangle()
+                    .fill(Color.gray.opacity(0.2))
+                    .frame(width: 60, height: 60)
+                    .cornerRadius(8)
+                    .overlay(
+                        Image(systemName: "newspaper.fill")
+                            .foregroundColor(.gray)
+                    )
+            }
+            
+            // Article info
+            VStack(alignment: .leading, spacing: 4) {
+                Text(article.title)
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .lineLimit(2)
+                
+                HStack(spacing: 4) {
+                    Text(article.source.name ?? "Unknown")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                    Text("•")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                    if let publishedDate = article.publishedDate {
+                        Text(timeAgo(from: publishedDate))
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
                 }
-
-                Spacer()
-
-                Image(systemName: "chevron.right")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
             }
-            .padding(12)
-            .background(Color(.systemGray6).opacity(0.5))
-            .cornerRadius(12)
+            
+            Spacer()
         }
-        .buttonStyle(PlainButtonStyle())
-        .fullScreenCover(isPresented: $showSafari) {
-            if let url = URL(string: newsItem.articleUrl) {
-                SafariView(url: url)
-            }
-        }
+        .padding(.vertical, 8)
     }
-
-    private var priorityColor: Color {
-        switch newsItem.priority {
-        case .critical: return .red
-        case .high: return .orange
-        case .normal: return .blue
+    
+    private func timeAgo(from date: Date) -> String {
+        let interval = Date().timeIntervalSince(date)
+        let hours = Int(interval / 3600)
+        if hours < 1 {
+            let minutes = Int(interval / 60)
+            return "\(minutes)m ago"
+        } else if hours < 24 {
+            return "\(hours)h ago"
+        } else {
+            let days = hours / 24
+            return "\(days)d ago"
         }
     }
 }

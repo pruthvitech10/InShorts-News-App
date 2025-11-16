@@ -23,6 +23,7 @@ class FeedViewModel: ObservableObject {
     var currentPage: Int = 1
     let aggregatorService: NewsAggregatorServiceProtocol
     let maxCachedArticles: Int = 100
+    let seenArticlesService = SeenArticlesService.shared
 
     // Background tasks - need to track these to cancel when switching categories
     private var currentSummarizationTask: Task<Void, Never>?
@@ -69,82 +70,90 @@ class FeedViewModel: ObservableObject {
             return
         }
         
-        // For You uses personalization logic
-        if selectedCategory == .forYou {
-            await loadPersonalizedFeed(useCache: false)
+        // HYBRID APPROACH: Check memory store first
+        let categoryKey = selectedCategory.rawValue
+        
+        if let cachedArticles = await NewsMemoryStore.shared.getArticles(for: categoryKey) {
+            // ⚡ INSTANT: Articles already in memory
+            Logger.debug("⚡ INSTANT: Loaded \(cachedArticles.count) articles from memory for \(selectedCategory.displayName)", category: .viewModel)
+            articles = cachedArticles
+            canLoadMore = true
+            isLoading = false
+            
+            // Smart refresh: If data is >30 minutes old, fetch fresh in background
+            if let timeSince = await NewsMemoryStore.shared.getTimeSinceLastFetch() {
+                let minutesOld = Int(timeSince / 60)
+                
+                if timeSince > 1800 {  // >30 minutes
+                    Logger.debug("🔄 Data is \(minutesOld) minutes old, fetching fresh in background...", category: .viewModel)
+                    Task {
+                        await fetchFreshArticles(for: categoryKey, silent: true)
+                    }
+                } else {
+                    Logger.debug("✅ Data is \(minutesOld) minutes old, still fresh!", category: .viewModel)
+                }
+            }
             return
         }
-
-        // Fetch fresh articles from our APIs
-        do {
-            Logger.debug("🌐 Fetching articles for \(selectedCategory.displayName)...", category: .viewModel)
-            
-            let enhancedArticles = try await aggregatorService.fetchAggregatedNews(
-                category: selectedCategory,
-                useLocationBased: true
-            )
-            
-            let fetchedArticles = enhancedArticles.map { $0.article }.shuffled()
-            
-            guard !fetchedArticles.isEmpty else {
-                errorMessage = "No articles found for \(selectedCategory.displayName)"
-                isLoading = false
-                return
-            }
-            
-            articles = fetchedArticles
-            canLoadMore = fetchedArticles.count >= AppConfig.articlesPerPage
-
-            // Generate AI summaries in background (non-blocking)
-            startBackgroundSummarization(for: fetchedArticles)
-            
-            Logger.debug("✅ Loaded \(articles.count) FRESH articles for \(selectedCategory.displayName)", category: .viewModel)
-            
-        } catch {
-            errorMessage = "Failed to load articles: \(error.localizedDescription)"
-            Logger.error("❌ API fetch failed: \(error.localizedDescription)", category: .viewModel)
-            articles = []
-        }
         
-        isLoading = false
-    }
-
-    // Load personalized For You feed
-    private func loadPersonalizedFeed(useCache: Bool) async {
-        do {
-            Logger.debug("🎯 Loading personalized 'For You' feed", category: .viewModel)
-            
-            // Fetch from all categories
-            let enhancedArticles = try await aggregatorService.fetchAggregatedNews(
-                category: nil, // Get all categories
-                useLocationBased: true
-            )
-            
-            let fetchedArticles = enhancedArticles.map { $0.article }
-            
-            // Personalize using AI
-            let personalized = PersonalizationService.shared.personalizeArticles(fetchedArticles)
-            
-            guard !personalized.isEmpty else {
-                errorMessage = "No personalized articles available"
-                isLoading = false
-                return
-            }
-            
-            articles = personalized
-            canLoadMore = false // For You feed doesn't support pagination
-            
-            Logger.debug("✅ Loaded \(articles.count) personalized articles", category: .viewModel)
-            
-        } catch {
-            errorMessage = "Failed to load personalized feed: \(error.localizedDescription)"
-            Logger.error("❌ Personalized feed failed: \(error.localizedDescription)", category: .viewModel)
-            articles = []
-        }
-        
-        isLoading = false
+        // No memory cache - fetch from internet
+        Logger.debug("📡 No memory cache, fetching from internet...", category: .viewModel)
+        await fetchFreshArticles(for: categoryKey)
     }
     
+    // Fetch fresh articles from internet
+    private func fetchFreshArticles(for categoryKey: String, silent: Bool = false) async {
+        // Check internet connection
+        guard NetworkMonitor.shared.isConnected else {
+            if !silent {
+                errorMessage = "No internet connection"
+                Logger.error("❌ No internet - stopping", category: .viewModel)
+                isLoading = false
+                articles = []
+            }
+            return
+        }
+        
+        do {
+            Logger.debug("🌐 Fetching fresh articles for \(selectedCategory.displayName) (silent: \(silent))...", category: .viewModel)
+            
+            // Fetch from Italian news service
+            let italianNewsService = ItalianNewsService.shared
+            let fetchedArticles = try await italianNewsService.fetchItalianNews(category: categoryKey, limit: Int.max)
+            
+            Logger.debug("✅ Fetched \(fetchedArticles.count) fresh articles", category: .viewModel)
+            
+            // Store in memory for next time
+            await NewsMemoryStore.shared.store(articles: fetchedArticles, for: categoryKey)
+            
+            // Update UI ONLY if not silent
+            if !silent {
+                articles = fetchedArticles
+                canLoadMore = true
+                isLoading = false
+            } else {
+                // Silent update: Only update if user is still on this category
+                if selectedCategory.rawValue == categoryKey {
+                    Logger.debug("🔄 Silent update: Refreshing articles in background", category: .viewModel)
+                    articles = fetchedArticles
+                    canLoadMore = true
+                }
+            }
+            
+            Logger.debug("✅ Loaded \(articles.count) articles for \(selectedCategory.displayName)", category: .viewModel)
+            
+        } catch {
+            if !silent {
+                errorMessage = "Failed to load articles: \(error.localizedDescription)"
+                Logger.error("❌ Fetch failed: \(error.localizedDescription)", category: .viewModel)
+                articles = []
+                isLoading = false
+            } else {
+                Logger.debug("⚠️ Silent fetch failed (ignored): \(error.localizedDescription)", category: .viewModel)
+            }
+        }
+    }
+
     // Generate AI summaries in background
     private func startBackgroundSummarization(for fetchedArticles: [Article]) {
         currentSummarizationTask = Task { [weak self] in
@@ -189,18 +198,17 @@ class FeedViewModel: ObservableObject {
         }
     }
 
-    // Load more articles
+    // Load more articles - SILENTLY (no loading indicator)
     func loadMoreArticles() async {
         // Guard conditions
         guard selectedCategory != .history else { return }
-        guard canLoadMore else { return }
         guard !isLoadingMore else { return }
         guard !isLoading else { return }
         
         isLoadingMore = true
         currentPage += 1
         
-        // Fetch from API
+        // Fetch from API - SILENTLY
         do {
             let enhancedArticles = try await aggregatorService.fetchAggregatedNews(
                 category: selectedCategory,
@@ -214,21 +222,13 @@ class FeedViewModel: ObservableObject {
                 !articles.contains(where: { $0.id == newArticle.id })
             }
             
+            // Just append new articles - NO LIMIT
             articles.append(contentsOf: newArticles)
             
-            // Trim if too many articles
-            if articles.count > maxCachedArticles {
-                articles = Array(articles.suffix(maxCachedArticles))
-                Logger.debug("⚠️ Trimmed to \(maxCachedArticles) articles", category: .viewModel)
-            }
-            
-            // No caching - always fresh!
-            
-            canLoadMore = fetchedArticles.count >= AppConfig.articlesPerPage
-            Logger.debug("✅ Loaded page \(currentPage) with \(newArticles.count) new articles", category: .viewModel)
+            Logger.debug("✅ Loaded \(newArticles.count) new articles silently", category: .viewModel)
             
         } catch {
-            Logger.error("Failed to load page \(currentPage): \(error.localizedDescription)", category: .viewModel)
+            Logger.error("Failed to load more: \(error.localizedDescription)", category: .viewModel)
             currentPage -= 1 // Rollback page increment
         }
         
@@ -244,11 +244,7 @@ class FeedViewModel: ObservableObject {
     func refreshCategory(category: NewsCategory) async {
         Logger.debug("🔄 Refreshing category: \(category.displayName)", category: .viewModel)
         
-        ToastManager.shared.show(toast: Toast(
-            style: .info,
-            message: "Refreshing \(category.displayName)..."
-        ))
-        
+        // Silent refresh - no toast notification
         if category == selectedCategory {
             await loadArticles(useCache: false)
         }

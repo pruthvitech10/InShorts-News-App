@@ -14,14 +14,40 @@ class SearchViewModel: ObservableObject {
     @Published var results: [Article] = []
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
+    @Published var breakingNews: [Article] = []
+    @Published var isLoadingBreaking: Bool = false
 
-    private let newsAPIService = NewsAPIService.shared
-    private let newsDataIOService = NewsDataIOService.shared
-    private let gNewsAPIService = GNewsAPIService.shared
-    private let newsDataHubAPIService = NewsDataHubAPIService.shared
-    private let rapidAPIService = RapidAPIService.shared
+    // Removed unused API services - using Guardian, Reddit, Hacker News, Italian News
+    
+    // Load breaking news (most recent articles from all categories)
+    func loadBreakingNews() async {
+        isLoadingBreaking = true
+        
+        Logger.debug("📰 Loading breaking news from memory store...", category: .viewModel)
+        
+        // Get articles from important categories (memory is always populated)
+        var allArticles: [Article] = []
+        let importantCategories = ["politics", "world", "business", "general"]
+        
+        for categoryKey in importantCategories {
+            if let categoryArticles = await NewsMemoryStore.shared.getArticles(for: categoryKey) {
+                Logger.debug("� Breaking News: Found \(categoryArticles.count) articles in '\(categoryKey)'", category: .viewModel)
+                allArticles.append(contentsOf: categoryArticles)
+            }
+        }
+        
+        // Sort by date and take top 10 most recent
+        let sortedArticles = allArticles.sorted {
+            ($0.publishedDate ?? .distantPast) > ($1.publishedDate ?? .distantPast)
+        }
+        
+        breakingNews = Array(sortedArticles.prefix(10))
+        isLoadingBreaking = false
+        
+        Logger.debug("✅ Loaded \(breakingNews.count) breaking news articles from \(allArticles.count) total", category: .viewModel)
+    }
 
-    // Search across all APIs until we get results
+    // Search through memory store - INSTANT!
     func search(useCache: Bool = true) async {
         // Validate first
         let (isValid, error) = ValidationUtil.validateSearchQuery(query)
@@ -30,58 +56,69 @@ class SearchViewModel: ObservableObject {
             isLoading = false
             return
         }
-        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
 
         isLoading = true
         errorMessage = nil
         
-        // No cache - always fresh search results!
-
-        // Sequential API calls with early exit
-        let apiProviders: [(name: String, fetch: () async throws -> [Article])] = [
-            ("GNews", { try await self.gNewsAPIService.searchArticles(query: trimmed, max: 20) }),
-            ("RapidAPI", { try await self.rapidAPIService.searchNews(query: trimmed, language: "it", limit: 20) }),
-            ("NewsData.io", { try await self.newsDataIOService.searchNews(query: trimmed, language: "it") }),
-            ("NewsAPI", { try await self.newsAPIService.searchArticles(query: trimmed, page: 1, pageSize: 20) }),
-            ("NewsDataHub", { try await self.newsDataHubAPIService.searchNews(query: trimmed, language: "it", limit: 20) })
-        ]
-
+        Logger.debug("🔍 Searching memory store for: '\(trimmed)'", category: .viewModel)
+        
+        // Search through ALL categories in memory store
         var allArticles: [Article] = []
-        var successCount = 0
-
-        for (name, fetch) in apiProviders {
-            do {
-                let articles = try await withTimeout(fetch, timeout: Constants.API.apiCallTimeoutPerService)
-                allArticles.append(contentsOf: articles)
-                successCount += 1
-
-                Logger.debug("✅ \(name): \(articles.count) results", category: .network)
-
-                // Early exit if got enough results
-                if articles.count >= 10 { break }
-
-            } catch let error as TimeoutError {
-                Logger.debug("⏱️ \(name) timeout, trying next...", category: .network)
-            } catch {
-                Logger.debug("❌ \(name) failed, trying next...", category: .network)
+        let categories = ["general", "politics", "business", "technology", "entertainment", "sports", "world", "crime", "automotive", "lifestyle"]
+        
+        for categoryKey in categories {
+            if let categoryArticles = await NewsMemoryStore.shared.getArticles(for: categoryKey) {
+                Logger.debug("📦 Found \(categoryArticles.count) articles in '\(categoryKey)' category", category: .viewModel)
+                allArticles.append(contentsOf: categoryArticles)
+            } else {
+                Logger.debug("⚠️ No articles in '\(categoryKey)' category", category: .viewModel)
             }
         }
-
-        // Deduplicate and filter
-        let freshArticles = filterFreshArticles(allArticles)
-        let uniqueArticles = deduplicateByURL(freshArticles)
-
-        // Sort by actual date (Article.publishedAt is String; use computed publishedDate)
-        results = uniqueArticles.sorted {
+        
+        // If memory is empty, fetch from internet
+        if allArticles.isEmpty {
+            Logger.debug("📡 Memory empty, fetching from internet for search...", category: .viewModel)
+            
+            do {
+                let italianNewsService = ItalianNewsService.shared
+                
+                for categoryKey in categories {
+                    let categoryArticles = try await italianNewsService.fetchItalianNews(category: categoryKey, limit: 100)
+                    allArticles.append(contentsOf: categoryArticles)
+                    
+                    // Store in memory for next time
+                    await NewsMemoryStore.shared.store(articles: categoryArticles, for: categoryKey)
+                }
+            } catch {
+                Logger.error("❌ Failed to fetch articles for search: \(error)", category: .viewModel)
+                errorMessage = "Failed to load articles. Please try again."
+                isLoading = false
+                return
+            }
+        }
+        
+        Logger.debug("📊 Searching through \(allArticles.count) articles", category: .viewModel)
+        
+        // Filter articles matching search query
+        let matchingArticles = allArticles.filter { article in
+            let titleMatch = article.title.lowercased().contains(trimmed)
+            let descriptionMatch = article.description?.lowercased().contains(trimmed) ?? false
+            let contentMatch = article.content?.lowercased().contains(trimmed) ?? false
+            return titleMatch || descriptionMatch || contentMatch
+        }
+        
+        // Sort by date (most recent first)
+        results = matchingArticles.sorted {
             ($0.publishedDate ?? .distantPast) > ($1.publishedDate ?? .distantPast)
         }
+        
         isLoading = false
-
-        if results.isEmpty {
-            errorMessage = successCount == 0
-                ? "Search unavailable. Check connection and try again."
-                : "No recent results found."
-        }
+        
+        Logger.debug("✅ Found \(results.count) matching articles for '\(query)'", category: .viewModel)
+        
+        // Don't set error message if no results - just show empty state
+        // errorMessage is only for actual errors (network, etc.)
     }
 
     // Helper: Filter articles published in the last 48 hours

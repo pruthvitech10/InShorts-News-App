@@ -2,27 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <!-- API keys are injected at build time via Config.xcconfig. Keep only placeholder references here. -->
-    <!-- Premium Sources -->
+    <!-- API keys are injected at build time via Config.xcconfig -->
+    <!-- Only Guardian API is optional - all other sources use public RSS/APIs -->
     <key>GUARDIAN_API_KEYS</key>
     <string>$(GUARDIAN_API_KEYS)</string>
-    <key>NYTIMES_API_KEYS</key>
-    <string>$(NYTIMES_API_KEYS)</string>
-    <key>CURRENTS_API_KEYS</key>
-    <string>$(CURRENTS_API_KEYS)</string>
-    <key>MEDIASTACK_API_KEYS</key>
-    <string>$(MEDIASTACK_API_KEYS)</string>
-    <!-- Standard Sources -->
-    <key>GNEWS_API_KEYS</key>
-    <string>$(GNEWS_API_KEYS)</string>
-    <key>NEWSDATAHUB_API_KEYS</key>
-    <string>$(NEWSDATAHUB_API_KEYS)</string>
-    <key>NEWSDATA_IO_KEYS</key>
-    <string>$(NEWSDATA_IO_KEYS)</string>
-    <key>NEWS_API_KEYS</key>
-    <string>$(NEWS_API_KEYS)</string>
-    <key>RAPIDAPI_KEYS</key>
-    <string>$(RAPIDAPI_KEYS)</string>
     <key>CFBundleDisplayName</key>
     <string>InShorts</string>
     <key>CFBundleName</key>
@@ -81,5 +64,14 @@
             </dict>
         </dict>
     </dict>
+    <key>UIBackgroundModes</key>
+    <array>
+        <string>fetch</string>
+        <string>processing</string>
+    </array>
+    <key>BGTaskSchedulerPermittedIdentifiers</key>
+    <array>
+        <string>com.newssss.refresh</string>
+    </array>
 </dict>
 </plist>

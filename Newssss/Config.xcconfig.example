@@ -2,54 +2,26 @@
 // Copy this file to Config.xcconfig and add your real API keys
 // Config.xcconfig is gitignored and will never be committed
 
-// ⭐ PREMIUM SOURCES (Highly Recommended!)
+// 🇮🇹 ITALIAN NEWS SOURCES - NO API KEYS NEEDED!
+// ✅ ANSA - Public RSS feed (unlimited, free)
+// ✅ La Repubblica - Public RSS feed (unlimited, free)
+// ✅ Corriere della Sera - Public RSS feed (unlimited, free)
+// ✅ Il Sole 24 Ore - Public RSS feed (unlimited, free)
+// ✅ Il Mattino - Public RSS feed (unlimited, free)
+// ✅ Gazzetta dello Sport - Public RSS feed (unlimited, free)
+// ✅ Corriere dello Sport - Public RSS feed (unlimited, free)
+// ✅ Tuttosport - Public RSS feed (unlimited, free)
 
-// The Guardian API Keys (BEST QUALITY!)
+// 🌍 INTERNATIONAL SOURCES - NO API KEYS NEEDED!
+// ✅ Reddit - Public API (60 requests/minute, unlimited)
+// ✅ Hacker News - Public API (unlimited requests)
+
+// ⚠️ OPTIONAL: The Guardian API (Recommended for international news)
 // Free tier: 5,000 requests/day - NO credit card required
 // Get your free API key at: https://open-platform.theguardian.com/access/
-GUARDIAN_API_KEYS = your_guardian_api_key_here
+// Leave empty if you don't want Guardian news
+GUARDIAN_API_KEYS = 
 
-// Hacker News - NO KEY NEEDED! Already integrated and working!
-// Free tier: UNLIMITED requests
-// Tech community's favorite news source
-
-// Reddit - NO KEY NEEDED! Already integrated and working!
-// Free tier: 60 requests/minute
-// Viral, trending content
-
-// New York Times API Keys (World-class journalism)
-// Free tier: 4,000 requests/day - NO credit card required
-// Get your free API key at: https://developer.nytimes.com/get-started
-NYTIMES_API_KEYS = your_nytimes_api_key_here
-
-// Currents API Keys (Real-time global news)
-// Free tier: 600 requests/day - NO credit card required
-// Get your free API key at: https://currentsapi.services/en/register
-CURRENTS_API_KEYS = your_currents_api_key_here
-
-// MediaStack API Keys (7,500+ news sources)
-// Free tier: 500 requests/month - NO credit card required
-// Get your free API key at: https://mediastack.com/product
-MEDIASTACK_API_KEYS = your_mediastack_api_key_here
-
-// 📰 STANDARD SOURCES
-
-// GNews API Keys (comma-separated for rotation)
-// Get your free API key at: https://gnews.io/
-GNEWS_API_KEYS = your_gnews_api_key_here
-
-// NewsData.io API Keys
-// Get your free API key at: https://newsdata.io/register
-NEWSDATA_IO_KEYS = your_newsdata_io_key_here
-
-// NewsAPI.org API Keys
-// Get your free API key at: https://newsapi.org/register
-NEWS_API_KEYS = your_newsapi_org_key_here
-
-// RapidAPI Keys
-// Get your free API key at: https://rapidapi.com/hub
-RAPIDAPI_KEYS = your_rapidapi_key_here
-
-// NewsDataHub API Keys
-// Get your free API key at: https://newsdatahub.com/dashboards
-NEWSDATAHUB_API_KEYS = your_newsdatahub_key_here
+// 🎉 THAT'S IT! 
+// 10 sources work without ANY API keys!
+// Guardian is optional but recommended for international perspective.

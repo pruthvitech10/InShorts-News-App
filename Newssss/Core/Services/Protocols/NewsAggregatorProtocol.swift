@@ -9,13 +9,6 @@ protocol NewsAPIServiceProtocol {
     func searchArticles(query: String, page: Int, pageSize: Int) async throws -> [Article]
 }
 
-protocol NewsCacheProtocol: Actor {
-    func get(forKey key: String) -> [Article]?
-    func set(articles: [Article], forKey key: String)
-    func clear(forKey key: String)
-    func clear(forCategory category: NewsCategory)
-}
-
 protocol BookmarkServiceProtocol: AnyObject {
     var bookmarks: [Article] { get }
     func addBookmark(_ article: Article)

@@ -26,6 +26,7 @@ struct SwipeableCardView: View {
     @State private var translatedTitle: String = ""
     @State private var translatedDescription: String = ""
     @State private var isTranslating = false
+    @State private var showTranslationUI = false
     
 
 
@@ -147,29 +148,13 @@ struct SwipeableCardView: View {
                         HStack(spacing: 12) {
                             // Translate Button
                             Button(action: {
-                                if isTranslating { return }
-                                
-                                if isTranslated {
-                                    // Switch back to original
-                                    withAnimation(.easeInOut(duration: 0.8)) {
-                                        isTranslated = false
-                                    }
-                                } else {
-                                    // Translate
-                                    Task {
-                                        await translateArticle()
-                                    }
-                                }
+                                // Show Apple's translation UI
+                                showTranslationUI = true
                             }) {
                                 HStack(spacing: 8) {
-                                    if isTranslating {
-                                        ProgressView()
-                                            .scaleEffect(0.8)
-                                    } else {
-                                        Image(systemName: isTranslated ? "globe.badge.chevron.backward" : "globe")
-                                            .font(.subheadline)
-                                    }
-                                    Text(isTranslated ? "Original" : "Translate")
+                                    Image(systemName: "globe")
+                                        .font(.subheadline)
+                                    Text("Translate")
                                         .font(.subheadline)
                                         .fontWeight(.medium)
                                 }
@@ -244,9 +229,10 @@ struct SwipeableCardView: View {
                 }
         )
         .onTapGesture { onTap?() }
+        .translationPresentation(isPresented: $showTranslationUI, text: article.title + "\n\n" + (article.description ?? ""))
         .fullScreenCover(isPresented: $showingSafari) {
             if let url = URL(string: article.url) {
-                SafariView(url: url).ignoresSafeArea()
+                ArticleWebViewWrapper(url: url, articleTitle: article.title, articleDescription: article.description)
             }
         }
         .onAppear {
@@ -257,61 +243,17 @@ struct SwipeableCardView: View {
     // Category Color
     private func categoryColor(for category: NewsCategory) -> Color {
         switch category {
-        case .forYou: return .teal.opacity(0.9)
         case .technology: return .blue.opacity(0.9)
         case .business: return .green.opacity(0.9)
         case .sports: return .orange.opacity(0.9)
         case .entertainment: return .purple.opacity(0.9)
         case .politics: return .red.opacity(0.9)
-        case .science: return .cyan.opacity(0.9)
-        case .health: return .pink.opacity(0.9)
+        case .world: return .blue.opacity(0.9)
+        case .crime: return .red.opacity(0.8)
+        case .automotive: return .orange.opacity(0.8)
+        case .lifestyle: return .mint.opacity(0.9)
         case .general: return .gray.opacity(0.9)
         case .history: return .indigo.opacity(0.9)
-        }
-    }
-    
-    // Inline Translation
-    @MainActor
-    private func translateArticle() async {
-        isTranslating = true
-        
-        let targetLanguage = Locale.Language(identifier: "en")
-        let commonSources = ["it", "es", "fr", "de", "pt", "nl", "ru", "zh", "ja", "ko", "ar", "hi", "tr"]
-        
-        do {
-            for sourceCode in commonSources {
-                do {
-                    let sourceLanguage = Locale.Language(identifier: sourceCode)
-                    let session = try TranslationSession(installedSource: sourceLanguage, target: targetLanguage)
-                    
-                    if !article.title.isEmpty {
-                        let response = try await session.translate(article.title)
-                        translatedTitle = response.targetText
-                    }
-                    
-                    if let description = article.description, !description.isEmpty {
-                        let response = try await session.translate(description)
-                        translatedDescription = response.targetText
-                    }
-                    
-                    withAnimation(.easeInOut(duration: 0.8)) {
-                        isTranslated = true
-                    }
-                    
-                    isTranslating = false
-                    Logger.debug("Translated from \(sourceCode) to English", category: .general)
-                    return
-                    
-                } catch {
-                    continue
-                }
-            }
-            
-            isTranslating = false
-            Logger.debug("No compatible source language detected", category: .general)
-        } catch {
-            isTranslating = false
-            ErrorLogger.log(error, context: "Translation")
         }
     }
     

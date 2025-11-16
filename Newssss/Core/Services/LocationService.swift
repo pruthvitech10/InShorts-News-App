@@ -13,7 +13,7 @@ class LocationService: NSObject, ObservableObject {
     static let shared = LocationService()
     
     private let locationManager = CLLocationManager()
-    private var currentCountryCode: String = "it"  // Default to Italy (Europe)
+    private var currentCountryCode: String = ""  // Empty until location is detected
     private var currentLanguageCode: String = "en"
     
     // Country information
@@ -23,12 +23,13 @@ class LocationService: NSObject, ObservableObject {
         var displayName: String { "\(name) (\(code.uppercased()))" }
     }
     
-    private(set) var detectedCountry: CountryInfo = CountryInfo(code: "it", name: "Italy")
+    private(set) var detectedCountry: CountryInfo = CountryInfo(code: "", name: "Detecting...")
+    @Published var isLocationReady: Bool = false  // Track if location is detected
     
     private override init() {
         super.init()
         setupLocationManager()
-        detectLocationFromLocale()
+        // Don't detect location yet - wait for permission
     }
     
     private func setupLocationManager() {
@@ -54,13 +55,23 @@ class LocationService: NSObject, ObservableObject {
     }
     
     func startUpdatingLocation() {
-        switch CLLocationManager.authorizationStatus() {
+        let status = CLLocationManager.authorizationStatus()
+        Logger.debug("📍 Location permission status: \(status.rawValue)", category: .general)
+        
+        switch status {
         case .notDetermined:
+            Logger.debug("📍 Requesting location permission...", category: .general)
             locationManager.requestWhenInUseAuthorization()
         case .authorizedWhenInUse, .authorizedAlways:
+            Logger.debug("📍 Permission granted, getting location...", category: .general)
             locationManager.startUpdatingLocation()
-        default:
-            break
+        case .denied, .restricted:
+            Logger.debug("📍 Permission denied, using device region as fallback", category: .general)
+            detectLocationFromLocale()
+            isLocationReady = true
+        @unknown default:
+            detectLocationFromLocale()
+            isLocationReady = true
         }
     }
     
@@ -119,9 +130,17 @@ class LocationService: NSObject, ObservableObject {
 
 extension LocationService: CLLocationManagerDelegate {
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        Logger.debug("📍 Authorization changed: \(manager.authorizationStatus.rawValue)", category: .general)
+        
         switch manager.authorizationStatus {
         case .authorizedWhenInUse, .authorizedAlways:
+            Logger.debug("✅ Location permission GRANTED! Getting GPS location...", category: .general)
             manager.startUpdatingLocation()
+        case .denied, .restricted:
+            Logger.debug("❌ Location permission DENIED. Using device region.", category: .general)
+            detectLocationFromLocale()
+            isLocationReady = true
+            NotificationCenter.default.post(name: .locationDidUpdate, object: nil)
         default:
             break
         }
@@ -130,10 +149,21 @@ extension LocationService: CLLocationManagerDelegate {
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         guard let location = locations.last else { return }
         
+        Logger.debug("📍 Got GPS coordinates: \(location.coordinate.latitude), \(location.coordinate.longitude)", category: .general)
+        
         // Reverse geocode to get country code
         let geocoder = CLGeocoder()
         geocoder.reverseGeocodeLocation(location) { [weak self] placemarks, error in
             guard let self = self else { return }
+            
+            if let error = error {
+                Logger.error("❌ Geocoding failed: \(error.localizedDescription)", category: .general)
+                // Fallback to device region
+                self.detectLocationFromLocale()
+                self.isLocationReady = true
+                NotificationCenter.default.post(name: .locationDidUpdate, object: nil)
+                return
+            }
             
             if let placemark = placemarks?.first {
                 if let countryCode = placemark.isoCountryCode?.lowercased() {
@@ -142,6 +172,9 @@ extension LocationService: CLLocationManagerDelegate {
                             code: countryCode,
                             name: placemark.country ?? "Unknown"
                         )
+                        
+                        self.isLocationReady = true
+                        Logger.debug("✅ Location ready! Country: \(countryCode.uppercased())", category: .general)
                         
                         // Post notification that location was updated
                         NotificationCenter.default.post(name: .locationDidUpdate, object: nil)

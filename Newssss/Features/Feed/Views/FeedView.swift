@@ -13,10 +13,11 @@ import SwiftUI
 
 @available(iOS 15.0, *)
 struct FeedView: View {
-    @StateObject private var viewModel = FeedViewModel(selectedCategory: .forYou)
+    @StateObject private var viewModel = FeedViewModel(selectedCategory: .general)
     @StateObject private var bookmarkService = BookmarkService.shared
     @State private var selectedArticle: Article?
     @StateObject private var toastManager = ToastManager.shared
+    @ObservedObject private var locationService = LocationService.shared
 
     var body: some View {
             NavigationStack {
@@ -78,6 +79,12 @@ struct FeedView: View {
                             onSkip: { article in
                                 // Just skip, don't bookmark
                                 Logger.debug("⬅️ Skipped article", category: .general)
+                            },
+                            onLoadMore: {
+                                // Infinite scrolling - load more articles
+                                Task {
+                                    await viewModel.loadMoreArticles()
+                                }
                             }
                         )
                         .padding(.horizontal, 8)
@@ -119,44 +126,34 @@ struct FeedView: View {
                     
                     if viewModel.isLoading && viewModel.articles.isEmpty {
                         LoadingView()
-                    } else if let errorMessage = viewModel.errorMessage, viewModel.articles.isEmpty {
-                        ErrorView(message: errorMessage) {
-                            Task { await viewModel.loadArticles(useCache: false) }
-                        }
-                    } else if viewModel.articles.isEmpty {
-                        EmptyStateView(
-                            icon: "newspaper",
-                            title: "No articles available",
-                            message: "Try selecting a different category or refresh to load new content.",
-                            actionTitle: "Retry",
-                            action: { Task { await viewModel.loadArticles(useCache: false) } }
-                        )
+                    } else if viewModel.articles.isEmpty && !viewModel.isLoading {
+                        // Auto-reload if articles run out
+                        Color.clear
+                            .onAppear {
+                                Task {
+                                    await viewModel.loadArticles(useCache: false)
+                                }
+                            }
                     }
                     
-                    // Loading more indicator
-                    if viewModel.isLoadingMore {
-                        VStack {
-                            Spacer()
-                            HStack {
-                                Spacer()
-                                ProgressView()
-                                    .padding()
-                                    .background(Color(.systemBackground).opacity(0.9))
-                                    .cornerRadius(8)
-                                Spacer()
-                            }
-                            .padding(.bottom, 120)
-                        }
-                    }
+                    // NO loading indicator - articles just appear
                 }
                 .animation(.easeInOut(duration: 0.4), value: viewModel.selectedCategory)
                 .animation(.easeInOut(duration: 0.3), value: viewModel.articles.count)
                     }
                     .navigationBarHidden(true)
                     .task {
-                        // Load articles when view appears
-                        if viewModel.articles.isEmpty {
-                            await viewModel.loadArticles(useCache: false)
+                        // Wait for location to be ready before loading articles
+                        if !locationService.isLocationReady {
+                            Logger.debug("⏳ Waiting for location permission...", category: .general)
+                        }
+                    }
+                    .onChange(of: locationService.isLocationReady) { isReady in
+                        if isReady && viewModel.articles.isEmpty {
+                            Logger.debug("✅ Location ready! Loading articles now...", category: .general)
+                            Task {
+                                await viewModel.loadArticles(useCache: false)
+                            }
                         }
                     }
                     .refreshable {
