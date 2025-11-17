@@ -1,0 +1,47 @@
+# ============================================
+# 🔐 FIREBASE FUNCTIONS SECURITY
+# ============================================
+
+# Node modules
+node_modules/
+
+# Build output
+lib/
+dist/
+
+# Environment variables & secrets
+.env
+.env.local
+.env.*.local
+.runtimeconfig.json
+
+# Service Account Keys (CRITICAL - NEVER COMMIT!)
+*-key.json
+*-service-account.json
+serviceAccountKey.json
+firebase-adminsdk*.json
+
+# Firebase debug & logs
+firebase-debug.log
+firebase-debug.*.log
+.firebase/
+
+# TypeScript
+*.tsbuildinfo
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+coverage/
+.nyc_output/
+
+# Temporary files
+*.tmp
+*.log
+*.bak

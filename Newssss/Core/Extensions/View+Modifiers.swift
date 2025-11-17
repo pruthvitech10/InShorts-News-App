@@ -14,7 +14,7 @@ extension View {
     func cardStyle() -> some View {
         self
             .background(Color(.systemBackground))
-            .cornerRadius(Constants.UI.cardCornerRadius)
+            .cornerRadius(AppConstants.cardCornerRadius)
             .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
     }
     
@@ -22,7 +22,7 @@ extension View {
     func elevatedCardStyle() -> some View {
         self
             .background(Color(.systemBackground))
-            .cornerRadius(Constants.UI.cardCornerRadius)
+            .cornerRadius(AppConstants.cardCornerRadius)
             .shadow(color: .black.opacity(0.15), radius: 10, x: 0, y: 5)
     }
     
@@ -30,7 +30,7 @@ extension View {
     func subtleCardStyle() -> some View {
         self
             .background(Color(.systemBackground))
-            .cornerRadius(Constants.UI.cardCornerRadius)
+            .cornerRadius(AppConstants.cardCornerRadius)
             .shadow(color: .black.opacity(0.05), radius: 3, x: 0, y: 1)
     }
     
@@ -38,9 +38,9 @@ extension View {
     func borderedCardStyle(color: Color = .gray.opacity(0.2)) -> some View {
         self
             .background(Color(.systemBackground))
-            .cornerRadius(Constants.UI.cardCornerRadius)
+            .cornerRadius(AppConstants.cardCornerRadius)
             .overlay(
-                RoundedRectangle(cornerRadius: Constants.UI.cardCornerRadius)
+                RoundedRectangle(cornerRadius: AppConstants.cardCornerRadius)
                     .stroke(color, lineWidth: 1)
             )
     }
@@ -204,7 +204,7 @@ extension View {
     
     /// Applies the app's standard animation
     func standardAnimation<V: Equatable>(_ value: V) -> some View {
-        self.animation(.easeInOut(duration: Constants.UI.animationDuration), value: value)
+        self.animation(.easeInOut(duration: AppConstants.animationDuration), value: value)
     }
 }
 
@@ -298,7 +298,7 @@ extension View {
             } else: { view in
                 view.cardStyle()
             }
-            .padding(.horizontal, Constants.UI.defaultPadding)
+            .padding(.horizontal, AppConstants.defaultPadding)
     }
     
     /// Adds a "fresh" indicator badge

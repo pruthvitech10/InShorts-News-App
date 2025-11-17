@@ -17,7 +17,7 @@ class SearchViewModel: ObservableObject {
     @Published var breakingNews: [Article] = []
     @Published var isLoadingBreaking: Bool = false
 
-    // Removed unused API services - using Guardian, Reddit, Hacker News, Italian News
+    // Uses FirebaseNewsService to fetch from Firebase Storage (backend provides all news)
     
     // Load breaking news (most recent articles from all categories)
     func loadBreakingNews() async {
@@ -76,26 +76,14 @@ class SearchViewModel: ObservableObject {
             }
         }
         
-        // If memory is empty, fetch from internet
+        // If memory is empty, wait for auto-refresh
         if allArticles.isEmpty {
-            Logger.debug("📡 Memory empty, fetching from internet for search...", category: .viewModel)
+            Logger.debug("📡 Memory empty, waiting for auto-refresh...", category: .viewModel)
             
-            do {
-                let italianNewsService = ItalianNewsService.shared
-                
-                for categoryKey in categories {
-                    let categoryArticles = try await italianNewsService.fetchItalianNews(category: categoryKey, limit: 100)
-                    allArticles.append(contentsOf: categoryArticles)
-                    
-                    // Store in memory for next time
-                    await NewsMemoryStore.shared.store(articles: categoryArticles, for: categoryKey)
-                }
-            } catch {
-                Logger.error("❌ Failed to fetch articles for search: \(error)", category: .viewModel)
-                errorMessage = "Failed to load articles. Please try again."
-                isLoading = false
-                return
-            }
+            // Show message to user
+            errorMessage = "Loading articles... Please wait for auto-refresh."
+            isLoading = false
+            return
         }
         
         Logger.debug("📊 Searching through \(allArticles.count) articles", category: .viewModel)

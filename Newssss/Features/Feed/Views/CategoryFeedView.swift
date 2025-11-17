@@ -141,15 +141,13 @@ class CategoryFeedViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String?
 
-    private let aggregatorService = NewsAggregatorService.shared
-
     func loadArticles(for feedType: FeedType) async {
         isLoading = true
         errorMessage = nil
         
         Logger.debug("📰 Loading \(feedType.title) from memory store...", category: .viewModel)
         
-        // HYBRID: Load from memory store (instant!)
+        // Load from memory store (instant!)
         var allArticles: [Article] = []
         
         for categoryKey in feedType.categories {
@@ -167,28 +165,9 @@ class CategoryFeedViewModel: ObservableObject {
             return
         }
         
-        // No memory - fetch from internet (first time only)
-        Logger.debug("📡 No memory, fetching from internet...", category: .viewModel)
+        // No memory - wait for auto-refresh (runs every 20 minutes)
+        Logger.debug("📡 No memory cache, waiting for auto-refresh...", category: .viewModel)
         
-        do {
-            let italianNewsService = ItalianNewsService.shared
-            
-            for categoryKey in feedType.categories {
-                let categoryArticles = try await italianNewsService.fetchItalianNews(category: categoryKey, limit: Int.max)
-                allArticles.append(contentsOf: categoryArticles)
-                
-                // Store in memory for next time
-                await NewsMemoryStore.shared.store(articles: categoryArticles, for: categoryKey)
-            }
-            
-            articles = allArticles.shuffled()
-            Logger.debug("✅ Loaded \(articles.count) articles for \(feedType.title)", category: .viewModel)
-            
-        } catch {
-            errorMessage = error.localizedDescription
-            Logger.error("❌ Failed to load \(feedType.title): \(error)", category: .viewModel)
-        }
-
         isLoading = false
     }
 }

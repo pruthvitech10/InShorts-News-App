@@ -273,7 +273,7 @@ extension String {
     /// Checks if string has meaningful content (not just whitespace/HTML)
     var hasMeaningfulContent: Bool {
         let cleaned = self.stripHTML()
-        return !cleaned.isBlankOrEmpty && cleaned.count >= Constants.Article.minSentenceLength
+        return !cleaned.isBlankOrEmpty && cleaned.count >= AppConstants.minSentenceLength
     }
 }
 

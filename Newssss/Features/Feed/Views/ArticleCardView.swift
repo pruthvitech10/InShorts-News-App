@@ -80,16 +80,37 @@ struct ArticleCardView: View {
                 }
                 
                 HStack {
+                    // Source name
                     Text(article.source.name)
                         .font(.caption)
                         .foregroundColor(.secondary)
                     
                     Spacer()
                     
+                    // Published time - show both relative and exact
                     if let date = article.publishedDate {
-                        Text(date.timeAgoDisplay())
+                        VStack(alignment: .trailing, spacing: 2) {
+                            HStack(spacing: 4) {
+                                Image(systemName: "clock")
+                                    .font(.caption2)
+                                Text(date.timeAgoDisplay())
+                            }
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(.orange)
+                            
+                            // Exact date/time from RSS feed
+                            Text(date.formatted(date: .abbreviated, time: .shortened))
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                        }
+                    } else {
+                        HStack(spacing: 4) {
+                            Image(systemName: "clock")
+                                .font(.caption2)
+                            Text("Just now")
+                        }
+                        .font(.caption)
+                        .foregroundColor(.orange)
                     }
                 }
             }

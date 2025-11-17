@@ -48,7 +48,7 @@ struct ErrorView: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                     
-                    Text("3. Check AppConfig.swift for setup")
+                    Text("3. Check your internet connection")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }

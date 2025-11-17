@@ -8,6 +8,7 @@
 
 import Foundation
 import SwiftUI
+import Combine
 
 
 // AppUser
@@ -69,6 +70,9 @@ struct AppUser {
     }
 }
 
+// Authentication manager alias - points to Firebase implementation
+typealias AuthenticationManager = FirebaseAuthenticationManager
+
 // LLMProvider
 enum LLMProvider: String, CaseIterable, Codable {
     case openai
@@ -86,46 +90,127 @@ enum LLMProvider: String, CaseIterable, Codable {
     }
 }
 
-// PopularSource
-enum PopularSource: String, CaseIterable, Codable, Hashable {
-    case bbc
-    case cnn
-    case theguardian
-    case reuters
-
-    var displayName: String {
-        switch self {
-        case .bbc: return "BBC"
-        case .cnn: return "CNN"
-        case .theguardian: return "The Guardian"
-        case .reuters: return "Reuters"
-        }
-    }
-
-    var sourceId: String {
-        return self.rawValue
-    }
-}
-
-// LLMService
+// LLMService - Uses Apple's Natural Language framework for summarization
 
 actor LLMService {
     static let shared = LLMService()
-
-    private var provider: LLMProvider = .openai
+    
+    private var provider: LLMProvider = .local
     private var apiKey: String = ""
-
+    
     func configure(provider: LLMProvider, apiKey: String) {
         self.provider = provider
         self.apiKey = apiKey
     }
-
+    
+    /// Summarize article using Apple's Natural Language framework
     func summarizeArticle(_ article: Article) async throws -> String {
-        return article.description ?? article.title
+        // Get full text (content + description)
+        let fullText = [article.content, article.description, article.title]
+            .compactMap { $0 }
+            .joined(separator: " ")
+        
+        guard !fullText.isEmpty else {
+            return article.title
+        }
+        
+        // Use Apple's Natural Language to create summary
+        return await extractSummary(from: fullText, maxSentences: 4)
     }
-
+    
+    /// Generate key points from article
     func generateKeyPoints(_ article: Article) async throws -> [String] {
-        return []
+        let fullText = [article.content, article.description]
+            .compactMap { $0 }
+            .joined(separator: " ")
+        
+        guard !fullText.isEmpty else {
+            return []
+        }
+        
+        return await extractKeyPoints(from: fullText, maxPoints: 5)
+    }
+    
+    // MARK: - Private Helpers
+    
+    private func extractSummary(from text: String, maxSentences: Int) async -> String {
+        let sentences = text.components(separatedBy: CharacterSet(charactersIn: ".!?"))
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty && $0.count > 20 }
+        
+        guard !sentences.isEmpty else {
+            return text.prefix(200).description
+        }
+        
+        // Score sentences based on position and length
+        let scoredSentences = sentences.enumerated().map { (index, sentence) -> (String, Double) in
+            var score = 0.0
+            
+            // Position weight (early sentences are more important)
+            let positionWeight = 1.0 - (Double(index) / Double(sentences.count))
+            score += positionWeight * 0.4
+            
+            // Length weight (prefer medium-length sentences)
+            let idealLength = 100.0
+            let lengthDiff = abs(Double(sentence.count) - idealLength)
+            let lengthWeight = max(0, 1.0 - (lengthDiff / idealLength))
+            score += lengthWeight * 0.3
+            
+            // Check for important keywords (Italian & English)
+            let importantKeywords = [
+                "importante", "significativo", "principale", "critico",
+                "important", "significant", "main", "critical",
+                "nuovo", "new", "primo", "first", "ultimo", "last"
+            ]
+            let lowercased = sentence.lowercased()
+            let keywordMatches = importantKeywords.filter { lowercased.contains($0) }.count
+            score += Double(keywordMatches) * 0.3
+            
+            return (sentence, score)
+        }
+        
+        // Get top sentences
+        let topSentences = scoredSentences
+            .sorted { $0.1 > $1.1 }
+            .prefix(maxSentences)
+            .map { $0.0 }
+        
+        return topSentences.joined(separator: ". ") + "."
+    }
+    
+    private func extractKeyPoints(from text: String, maxPoints: Int) async -> [String] {
+        let sentences = text.components(separatedBy: CharacterSet(charactersIn: ".!?"))
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty && $0.count > 15 && $0.count < 150 }
+        
+        guard !sentences.isEmpty else {
+            return []
+        }
+        
+        // Score and extract key points
+        let scored = sentences.map { sentence -> (String, Double) in
+            var score = 0.0
+            
+            // Check for action words
+            let actionWords = [
+                "annuncia", "dichiara", "rivela", "conferma", "propone",
+                "announces", "declares", "reveals", "confirms", "proposes"
+            ]
+            let lowercased = sentence.lowercased()
+            score += Double(actionWords.filter { lowercased.contains($0) }.count) * 2.0
+            
+            // Prefer shorter, punchy sentences for key points
+            if sentence.count < 100 {
+                score += 1.0
+            }
+            
+            return (sentence, score)
+        }
+        
+        return scored
+            .sorted { $0.1 > $1.1 }
+            .prefix(maxPoints)
+            .map { $0.0 }
     }
 }
 

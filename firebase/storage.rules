@@ -1,0 +1,10 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Allow public read access to all files in news folder
+    match /news/{allPaths=**} {
+      allow read: if true;  // Anyone can read
+      allow write: if false;  // Only Cloud Functions can write
+    }
+  }
+}

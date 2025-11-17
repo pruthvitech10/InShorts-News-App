@@ -17,31 +17,46 @@ class FeedViewModel: ObservableObject {
     @Published var canLoadMore: Bool = false
     @Published var errorMessage: String? = nil
     @Published var isLoadingMore: Bool = false
+    @Published var lastFetchTime: Date? = nil  // Show when data was last fetched
 
     // Core properties
     var selectedCategory: NewsCategory
     var currentPage: Int = 1
-    let aggregatorService: NewsAggregatorServiceProtocol
-    let maxCachedArticles: Int = 100
+    // NO LIMIT - display all articles from backend
     let seenArticlesService = SeenArticlesService.shared
 
     // Background tasks - need to track these to cancel when switching categories
     private var currentSummarizationTask: Task<Void, Never>?
     private var currentFetchTask: Task<Void, Never>?
     private var loadingTask: Task<Void, Never>?
+    private var cancellables = Set<AnyCancellable>()
 
     // Setup
-    init(selectedCategory: NewsCategory,
-         aggregatorService: NewsAggregatorServiceProtocol) {
+    init(selectedCategory: NewsCategory) {
         self.selectedCategory = selectedCategory
-        self.aggregatorService = aggregatorService
+        
+        // ⚡ Listen for background refresh completion
+        NotificationCenter.default.publisher(for: .newsRefreshed)
+            .sink { [weak self] _ in
+                Task { @MainActor in
+                    self?.loadArticlesFromCache()
+                }
+            }
+            .store(in: &cancellables)
     }
     
-    convenience init(selectedCategory: NewsCategory) {
-        self.init(
-            selectedCategory: selectedCategory,
-            aggregatorService: NewsAggregatorService.shared
-        )
+    /// ⚡ Load articles from cache when background fetch completes
+    private func loadArticlesFromCache() {
+        let categoryKey = selectedCategory.rawValue
+        
+        Task {
+            if let cachedArticles = await NewsMemoryStore.shared.getArticles(for: categoryKey) {
+                let unseenArticles = seenArticlesService.filterUnseenArticles(cachedArticles)
+                articles = unseenArticles
+                canLoadMore = true
+                Logger.debug("⚡ UI updated: \(unseenArticles.count) articles from cache", category: .viewModel)
+            }
+        }
     }
 
     // Cancel any running tasks to avoid conflicts
@@ -70,25 +85,41 @@ class FeedViewModel: ObservableObject {
             return
         }
         
-        // HYBRID APPROACH: Check memory store first
         let categoryKey = selectedCategory.rawValue
         
+        // If user manually refreshed (useCache = false), force refresh
+        if !useCache {
+            Logger.debug("⚡ Manual refresh - using FORCE MODE", category: .viewModel)
+            BackgroundRefreshService.shared.forceRefresh()
+            isLoading = false  // Don't show loading spinner while background fetching
+            return
+        }
+        
+        // HYBRID APPROACH: Check memory store first
         if let cachedArticles = await NewsMemoryStore.shared.getArticles(for: categoryKey) {
             // ⚡ INSTANT: Articles already in memory
-            Logger.debug("⚡ INSTANT: Loaded \(cachedArticles.count) articles from memory for \(selectedCategory.displayName)", category: .viewModel)
-            articles = cachedArticles
+            // Filter out articles user already swiped
+            let unseenCached = seenArticlesService.filterUnseenArticles(cachedArticles)
+            
+            // CRITICAL: If all filtered out, show all cached to avoid blank screen
+            if unseenCached.isEmpty && !cachedArticles.isEmpty {
+                Logger.debug("⚠️ All \(cachedArticles.count) articles marked as seen - showing all to avoid blank screen", category: .viewModel)
+                articles = cachedArticles
+            } else {
+                Logger.debug("⚡ INSTANT: Loaded \(cachedArticles.count) cached → \(unseenCached.count) unseen for \(selectedCategory.displayName)", category: .viewModel)
+                articles = unseenCached
+            }
+            
             canLoadMore = true
             isLoading = false
+            lastFetchTime = await NewsMemoryStore.shared.lastFetchTime  // Show when cache was created
             
             // Smart refresh: If data is >30 minutes old, fetch fresh in background
             if let timeSince = await NewsMemoryStore.shared.getTimeSinceLastFetch() {
                 let minutesOld = Int(timeSince / 60)
                 
                 if timeSince > 1800 {  // >30 minutes
-                    Logger.debug("🔄 Data is \(minutesOld) minutes old, fetching fresh in background...", category: .viewModel)
-                    Task {
-                        await fetchFreshArticles(for: categoryKey, silent: true)
-                    }
+                    Logger.debug("🔄 Data is \(minutesOld) minutes old, will auto-refresh soon...", category: .viewModel)
                 } else {
                     Logger.debug("✅ Data is \(minutesOld) minutes old, still fresh!", category: .viewModel)
                 }
@@ -96,100 +127,21 @@ class FeedViewModel: ObservableObject {
             return
         }
         
-        // No memory cache - fetch from internet
-        Logger.debug("📡 No memory cache, fetching from internet...", category: .viewModel)
-        await fetchFreshArticles(for: categoryKey)
+        // No memory cache - wait for auto-refresh
+        Logger.debug("📡 No memory cache, waiting for auto-refresh...", category: .viewModel)
+        
+        isLoading = false
     }
     
-    // Fetch fresh articles from internet
-    private func fetchFreshArticles(for categoryKey: String, silent: Bool = false) async {
-        // Check internet connection
-        guard NetworkMonitor.shared.isConnected else {
-            if !silent {
-                errorMessage = "No internet connection"
-                Logger.error("❌ No internet - stopping", category: .viewModel)
-                isLoading = false
-                articles = []
-            }
-            return
-        }
-        
-        do {
-            Logger.debug("🌐 Fetching fresh articles for \(selectedCategory.displayName) (silent: \(silent))...", category: .viewModel)
-            
-            // Fetch from Italian news service
-            let italianNewsService = ItalianNewsService.shared
-            let fetchedArticles = try await italianNewsService.fetchItalianNews(category: categoryKey, limit: Int.max)
-            
-            Logger.debug("✅ Fetched \(fetchedArticles.count) fresh articles", category: .viewModel)
-            
-            // Store in memory for next time
-            await NewsMemoryStore.shared.store(articles: fetchedArticles, for: categoryKey)
-            
-            // Update UI ONLY if not silent
-            if !silent {
-                articles = fetchedArticles
-                canLoadMore = true
-                isLoading = false
-            } else {
-                // Silent update: Only update if user is still on this category
-                if selectedCategory.rawValue == categoryKey {
-                    Logger.debug("🔄 Silent update: Refreshing articles in background", category: .viewModel)
-                    articles = fetchedArticles
-                    canLoadMore = true
-                }
-            }
-            
-            Logger.debug("✅ Loaded \(articles.count) articles for \(selectedCategory.displayName)", category: .viewModel)
-            
-        } catch {
-            if !silent {
-                errorMessage = "Failed to load articles: \(error.localizedDescription)"
-                Logger.error("❌ Fetch failed: \(error.localizedDescription)", category: .viewModel)
-                articles = []
-                isLoading = false
-            } else {
-                Logger.debug("⚠️ Silent fetch failed (ignored): \(error.localizedDescription)", category: .viewModel)
-            }
-        }
-    }
+    // REMOVED - Use BackgroundRefreshService instead!
 
 
-    // Load more articles - SILENTLY (no loading indicator)
+    // Load more articles - DISABLED (already loading unlimited articles with CategoryEnforcer)
     func loadMoreArticles() async {
-        // Guard conditions
-        guard selectedCategory != .history else { return }
-        guard !isLoadingMore else { return }
-        guard !isLoading else { return }
-        
-        isLoadingMore = true
-        currentPage += 1
-        
-        // Fetch from API - SILENTLY
-        do {
-            let enhancedArticles = try await aggregatorService.fetchAggregatedNews(
-                category: selectedCategory,
-                useLocationBased: true
-            )
-            
-            let fetchedArticles = enhancedArticles.map { $0.article }
-            
-            // Filter out duplicates
-            let newArticles = fetchedArticles.filter { newArticle in
-                !articles.contains(where: { $0.id == newArticle.id })
-            }
-            
-            // Just append new articles - NO LIMIT
-            articles.append(contentsOf: newArticles)
-            
-            Logger.debug("✅ Loaded \(newArticles.count) new articles silently", category: .viewModel)
-            
-        } catch {
-            Logger.error("Failed to load more: \(error.localizedDescription)", category: .viewModel)
-            currentPage -= 1 // Rollback page increment
-        }
-        
-        isLoadingMore = false
+        // NO-OP: We already load ALL articles from all sources
+        // This prevents bypassing CategoryEnforcer when scrolling
+        Logger.debug("⚠️ loadMoreArticles called but disabled - already loading unlimited articles", category: .viewModel)
+        return
     }
 
     // Refresh feed
@@ -199,12 +151,16 @@ class FeedViewModel: ObservableObject {
     }
 
     func refreshCategory(category: NewsCategory) async {
-        Logger.debug("🔄 Refreshing category: \(category.displayName)", category: .viewModel)
+        Logger.debug("🔄 MANUAL REFRESH - Clearing JSON files and fetching fresh", category: .viewModel)
         
-        // Silent refresh - no toast notification
-        if category == selectedCategory {
-            await loadArticles(useCache: false)
+        guard category == selectedCategory else {
+            return
         }
+        
+        // ⚡ FORCE refresh - This will DELETE JSON files and fetch fresh!
+        BackgroundRefreshService.shared.forceRefresh()
+        
+        Logger.debug("✅ Force refresh triggered", category: .viewModel)
     }
 
     // Switch categories
@@ -223,11 +179,9 @@ class FeedViewModel: ObservableObject {
         selectedCategory = category
         currentPage = 1
         
-        // Keep old articles visible while loading new ones
-        // This makes the transition feel smoother
-        
+        // ⚡ INSTANT switch - load from cache immediately!
         Task {
-            await loadArticles(useCache: false)
+            await loadArticles(useCache: true)
         }
     }
 

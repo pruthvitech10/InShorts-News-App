@@ -182,13 +182,13 @@ extension Date {
     // Check if date is recent
     var isFresh: Bool {
         let age = Date().timeIntervalSince(self)
-        return age < Constants.Article.preferredAge
+        return age < (24 * 60 * 60)  // 24 hours
     }
     
     /// Check if the article is still valid (not too old)
     var isValid: Bool {
         let age = Date().timeIntervalSince(self)
-        return age < Constants.Article.maxAge
+        return age < AppConstants.maxArticleAge
     }
     
     /// Get the age of this date in seconds

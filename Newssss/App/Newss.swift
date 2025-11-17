@@ -13,36 +13,67 @@ import GoogleSignIn
 import Combine
 import os.log
 
-// App Delegate
-
-class AppDelegate: NSObject, UIApplicationDelegate {
-    func application(_ application: UIApplication,
-                    didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
-        configureFirebase()
-        configureBackgroundRefresh()
-        return true
-    }
+// CRITICAL: Global Firebase initialization barrier
+class FirebaseInitializer {
+    static let shared = FirebaseInitializer()
+    private(set) var isReady = false
+    private let lock = NSLock()
     
-    /// Configures Firebase with proper error handling
-    private func configureFirebase() {
+    private init() {}
+    
+    func configure() {
+        lock.lock()
+        defer { lock.unlock() }
+        
+        // Check if already configured
+        if isReady {
+            Logger.debug("✅ Firebase already configured", category: .general)
+            return
+        }
+        
         // Check if Firebase config file exists
         guard Bundle.main.path(forResource: "GoogleService-Info", ofType: "plist") != nil else {
-            Logger.debug("Firebase config missing (development mode - continuing without Firebase)", category: .general)
+            Logger.debug("⚠️ Firebase config missing (development mode)", category: .general)
             return
         }
         
         // Configure Firebase if not already configured
         if FirebaseApp.app() == nil {
             FirebaseApp.configure()
-            Logger.debug("Firebase configured successfully", category: .general)
+            Logger.debug("🔥 Firebase configured successfully", category: .general)
         }
+        
+        // CRITICAL: Set ready flag AFTER configuration completes
+        isReady = true
+        Logger.debug("✅ Firebase initialization complete - ready for fetching", category: .general)
     }
     
-    /// Configure background refresh service
-    private func configureBackgroundRefresh() {
+    func waitUntilReady(timeout: TimeInterval = 5.0) async -> Bool {
+        let start = Date()
+        while !isReady {
+            if Date().timeIntervalSince(start) > timeout {
+                Logger.debug("⚠️ Firebase initialization timeout", category: .general)
+                return false
+            }
+            try? await Task.sleep(nanoseconds: 100_000_000) // 0.1s
+        }
+        return true
+    }
+}
+
+// App Delegate
+
+class AppDelegate: NSObject, UIApplicationDelegate {
+    func application(_ application: UIApplication,
+                    didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
+        // CRITICAL: Configure Firebase FIRST, IMMEDIATELY
+        FirebaseInitializer.shared.configure()
+        
+        // Register background tasks
         BackgroundRefreshService.shared.registerBackgroundTasks()
-        BackgroundRefreshService.shared.startAutoRefresh()
+        
         Logger.debug("🔄 Background refresh configured", category: .general)
+        return true
     }
 }
 
@@ -54,15 +85,20 @@ struct Newss: App {
     @StateObject private var localizationManager = LocalizationManager.shared
     
     init() {
-        // Early Firebase configuration (before any Firebase-dependent code runs)
-        if Bundle.main.path(forResource: "GoogleService-Info", ofType: "plist") != nil {
-            if FirebaseApp.app() == nil {
-                FirebaseApp.configure()
+        // CRITICAL: Start auto-refresh AFTER Firebase is ready
+        Task {
+            // Wait for Firebase to be ready
+            let ready = await FirebaseInitializer.shared.waitUntilReady()
+            if ready {
+                Logger.debug("🚀 Firebase ready - starting auto-refresh", category: .general)
+                BackgroundRefreshService.shared.startAutoRefresh()
+            } else {
+                Logger.debug("❌ Firebase not ready - skipping auto-refresh", category: .general)
             }
         }
         
-        // Request location permission to show local news
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+        // Request location in background (doesn't need Firebase)
+        Task {
             LocationService.shared.startUpdatingLocation()
         }
     }
@@ -79,20 +115,9 @@ struct Newss: App {
 
 struct MainTabView: View {
     @State private var authManager: AuthenticationManager? = nil
-    @State private var showOnboarding = !UserDefaults.standard.bool(forKey: "hasSeenOnboarding")
     
     var body: some View {
-        ZStack {
-            // Main app content
-            authenticatedView
-            
-            // Onboarding overlay (shows on first launch)
-            if showOnboarding {
-                OnboardingView(showOnboarding: $showOnboarding)
-                    .transition(.opacity)
-                    .zIndex(999)
-            }
-        }
+        authenticatedView
     }
     
     private var authenticatedView: some View {

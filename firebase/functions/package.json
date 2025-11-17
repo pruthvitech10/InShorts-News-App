@@ -1,0 +1,32 @@
+{
+  "name": "inshorts-news-functions",
+  "version": "1.0.0",
+  "description": "Firebase Cloud Functions for InShorts News App",
+  "main": "lib/index.js",
+  "scripts": {
+    "build": "tsc",
+    "serve": "npm run build && firebase emulators:start --only functions",
+    "shell": "npm run build && firebase functions:shell",
+    "start": "npm run shell",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log",
+    "backend": "npm run build && node lib/backend-complete.js",
+    "test-backend": "npm run backend"
+  },
+  "engines": {
+    "node": "20"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "cheerio": "^1.0.0-rc.12",
+    "fast-xml-parser": "^4.3.0",
+    "firebase-admin": "^12.0.0",
+    "firebase-functions": "^4.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "firebase-functions-test": "^3.1.0",
+    "typescript": "^5.0.0"
+  },
+  "private": true
+}

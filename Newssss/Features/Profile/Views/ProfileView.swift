@@ -133,6 +133,26 @@ private struct AuthenticatedView: View {
                 .padding(.horizontal, 20)
             }
             
+            // Clear History button
+            Button(action: {
+                SeenArticlesService.shared.clearSeenArticles()
+                Logger.debug("🗑️ Cleared all seen articles history", category: .general)
+            }) {
+                HStack(spacing: 8) {
+                    Image(systemName: "clock.arrow.circlepath")
+                        .font(.subheadline)
+                    Text("Clear History (\(SeenArticlesService.shared.getSeenCount()) seen)")
+                        .font(.headline)
+                }
+                .foregroundColor(.orange)
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(Color(.systemGray6))
+                .cornerRadius(12)
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 24)
+            
             // Sign out button
             Button(action: onSignOut) {
                 HStack(spacing: 8) {

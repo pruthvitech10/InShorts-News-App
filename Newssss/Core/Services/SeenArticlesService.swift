@@ -3,8 +3,7 @@
 //  Newssss
 //
 //  Tracks articles user has already seen/swiped
-//  SESSION-BASED: Only remembers during current app session
-//  Clears when app is closed/terminated
+//  PERMANENT: Saves to disk so articles stay marked forever
 //
 
 import Foundation
@@ -12,46 +11,59 @@ import Foundation
 class SeenArticlesService {
     static let shared = SeenArticlesService()
     
-    // SESSION-BASED: Only in memory, NOT saved to disk
+    // PERMANENT: Saved to disk
     private var seenArticleURLs: Set<String> = []
+    private let seenArticlesKey = "seenArticles_permanent"
     
     private init() {
-        // NO loading from UserDefaults - start fresh each session
-        Logger.debug("🆕 Started new session - history cleared", category: .general)
-        
-        // Clear any old data if it exists
-        UserDefaults.standard.removeObject(forKey: "seenArticles")
+        // Load from disk - articles stay marked forever
+        loadSeenArticles()
+        Logger.debug("🆕 Loaded \(seenArticleURLs.count) permanently seen articles", category: .general)
     }
     
     // MARK: - Public Methods
     
-    /// Mark article as seen (user swiped it) - SESSION ONLY
+    /// Mark article as seen (user swiped it) - PERMANENT
     func markAsSeen(_ article: Article) {
         seenArticleURLs.insert(article.url)
-        // NO saving to disk - only in memory for this session
-        Logger.debug("✅ Marked as seen (session only): \(article.title)", category: .general)
+        saveSeenArticles()
+        Logger.debug("✅ Marked as seen (forever): \(article.title)", category: .general)
     }
     
-    /// Check if article has been seen in THIS SESSION
+    /// Check if article has been seen EVER
     func hasBeenSeen(_ article: Article) -> Bool {
         return seenArticleURLs.contains(article.url)
     }
     
-    /// Filter out seen articles from array (THIS SESSION ONLY)
+    /// Filter out seen articles from array (PERMANENT)
     func filterUnseenArticles(_ articles: [Article]) -> [Article] {
         let unseen = articles.filter { !hasBeenSeen($0) }
-        Logger.debug("📊 Filtered (session): \(articles.count) total → \(unseen.count) unseen", category: .general)
+        Logger.debug("📊 Filtered (permanent): \(articles.count) total → \(unseen.count) unseen", category: .general)
         return unseen
     }
     
-    /// Clear session history (happens automatically when app closes)
+    /// Clear ALL history (user action only)
     func clearSeenArticles() {
         seenArticleURLs.removeAll()
-        Logger.debug("🗑️ Cleared session history", category: .general)
+        saveSeenArticles()
+        Logger.debug("🗑️ Cleared ALL seen articles", category: .general)
     }
     
-    /// Get count of seen articles in THIS SESSION
+    /// Get count of seen articles EVER
     func getSeenCount() -> Int {
         return seenArticleURLs.count
+    }
+    
+    // MARK: - Persistence
+    
+    private func saveSeenArticles() {
+        let urls = Array(seenArticleURLs)
+        UserDefaults.standard.set(urls, forKey: seenArticlesKey)
+    }
+    
+    private func loadSeenArticles() {
+        if let urls = UserDefaults.standard.array(forKey: seenArticlesKey) as? [String] {
+            seenArticleURLs = Set(urls)
+        }
     }
 }

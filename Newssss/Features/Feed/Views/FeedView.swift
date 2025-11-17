@@ -18,6 +18,7 @@ struct FeedView: View {
     @State private var selectedArticle: Article?
     @StateObject private var toastManager = ToastManager.shared
     @ObservedObject private var locationService = LocationService.shared
+    @ObservedObject private var networkMonitor = NetworkMonitor.shared
 
     var body: some View {
             NavigationStack {
@@ -43,17 +44,25 @@ struct FeedView: View {
                     .padding(.horizontal, 20)
                     .padding(.top, 8)
 
-                    CategoryHeaderView(
-                        selectedCategory: $viewModel.selectedCategory,
-                        onCategoryChange: { category in
-                            viewModel.changeCategory(category)
-                        },
-                        onCategoryDoubleClick: { category in
-                            Task {
-                                await viewModel.refreshCategory(category: category)
+                    VStack(spacing: 4) {
+                        CategoryHeaderView(
+                            selectedCategory: $viewModel.selectedCategory,
+                            onCategoryChange: { category in
+                                viewModel.changeCategory(category)
+                            },
+                            onCategoryDoubleClick: { category in
+                                // Show refresh toast
+                                ToastManager.shared.show(toast: Toast(
+                                    style: .info,
+                                    message: "Refreshing \(category.displayName)...",
+                                    duration: 1.5
+                                ))
+                                Task {
+                                    await viewModel.refreshCategory(category: category)
+                                }
                             }
-                        }
-                    )
+                        )
+                    }
                     .padding(.bottom, 8)
                 }
                 .background(Color(.systemBackground))
@@ -127,13 +136,24 @@ struct FeedView: View {
                     if viewModel.isLoading && viewModel.articles.isEmpty {
                         LoadingView()
                     } else if viewModel.articles.isEmpty && !viewModel.isLoading {
-                        // Auto-reload if articles run out
-                        Color.clear
-                            .onAppear {
-                                Task {
-                                    await viewModel.loadArticles(useCache: false)
-                                }
+                        // Check if offline - show subtle message
+                        if !networkMonitor.isConnected {
+                            VStack(spacing: 0) {
+                                Spacer()
+                                Text("Offline")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                                Spacer()
                             }
+                        } else {
+                            // Auto-reload if articles run out and online
+                            Color.clear
+                                .onAppear {
+                                    Task {
+                                        await viewModel.loadArticles(useCache: false)
+                                    }
+                                }
+                        }
                     }
                     
                     // NO loading indicator - articles just appear
@@ -143,16 +163,14 @@ struct FeedView: View {
                     }
                     .navigationBarHidden(true)
                     .task {
-                        // Wait for location to be ready before loading articles
-                        if !locationService.isLocationReady {
-                            Logger.debug("⏳ Waiting for location permission...", category: .general)
-                        }
+                        // ⚡ Load articles IMMEDIATELY from cache - don't wait for location!
+                        await viewModel.loadArticles(useCache: true)
                     }
                     .onChange(of: locationService.isLocationReady) { isReady in
-                        if isReady && viewModel.articles.isEmpty {
-                            Logger.debug("✅ Location ready! Loading articles now...", category: .general)
+                        if isReady {
+                            Logger.debug("✅ Location ready! Refreshing with location data in background...", category: .general)
                             Task {
-                                await viewModel.loadArticles(useCache: false)
+                                await viewModel.loadArticles(useCache: true)
                             }
                         }
                     }
@@ -165,10 +183,8 @@ struct FeedView: View {
                         }
                     }
                     .onReceive(NotificationCenter.default.publisher(for: .locationDidUpdate)) { _ in
-                        Logger.debug("📍 Location changed - refreshing feed with new location", category: .general)
-                        Task {
-                            await viewModel.refreshArticles()
-                        }
+                        Logger.debug("📍 Location changed - will use new location in next auto-refresh", category: .general)
+                        // Don't trigger immediate refresh - let auto-refresh handle it
                     }
                     .sheet(item: $selectedArticle) { article in
                         ArticleDetailView(article: article)

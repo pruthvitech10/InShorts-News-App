@@ -2,10 +2,7 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <!-- API keys are injected at build time via Config.xcconfig -->
-    <!-- Only Guardian API is optional - all other sources use public RSS/APIs -->
-    <key>GUARDIAN_API_KEYS</key>
-    <string>$(GUARDIAN_API_KEYS)</string>
+    <!-- No API keys needed - app fetches from Firebase Storage -->
     <key>CFBundleDisplayName</key>
     <string>InShorts</string>
     <key>CFBundleName</key>
@@ -48,9 +45,9 @@
     <key>UILaunchStoryboardName</key>
     <string>LaunchScreen</string>
     <key>NSLocationWhenInUseUsageDescription</key>
-    <string>We need your location to show you local news - like Napoli football when you're in Naples, or Italian politics when you're in Italy. Your location stays on your device.</string>
+    <string>InShorts wants to access your location to show you local news.</string>
     <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-    <string>We need your location to show you local news - like Napoli football when you're in Naples, or Italian politics when you're in Italy. Your location stays on your device.</string>
+    <string>InShorts wants to access your location to show you local news.</string>
     <key>NSAppTransportSecurity</key>
     <dict>
         <key>NSExceptionDomains</key>

@@ -85,7 +85,7 @@ struct CardStackView: View {
 
     // Handle left/right swipes
     private func handleSwipeLeft(article: Article) {
-        // Mark as seen - user will NEVER see this article again
+        // CRITICAL: Mark as seen - user will NEVER see this article again
         seenArticlesService.markAsSeen(article)
         
         // Track skip in history

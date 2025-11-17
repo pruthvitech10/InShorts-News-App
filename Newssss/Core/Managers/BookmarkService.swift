@@ -49,7 +49,7 @@ final class BookmarkService: ObservableObject {
     
     private struct Config {
         static let bookmarksFilename = "bookmarked_articles.json"
-        static let maxBookmarks = 500
+        // NO LIMIT - unlimited bookmarks
         static let autoSaveDelay: TimeInterval = 0.5
     }
     
@@ -77,24 +77,19 @@ final class BookmarkService: ObservableObject {
         isLoading = true
         error = nil
         
-        do {
-            let loaded = try await Task.detached(priority: .userInitiated) { [weak self] in
-                guard let self else { return [] }
-                return self.persistenceManager.load(
-                    from: Config.bookmarksFilename,
-                    as: [Article].self
-                ) ?? []
-            }.value
-            
-            // Sort by most recent first
-            bookmarks = (loaded as? [Article] ?? []).sorted { ($0.savedDate ?? .distantPast) > ($1.savedDate ?? .distantPast) }
-            bookmarkSet = Set(bookmarks.map { $0.url })
-            
-            Logger.debug("✅ Loaded \(bookmarks.count) bookmarks", category: .persistence)
-        } catch {
-            self.error = .loadFailed(error)
-            Logger.error("❌ Failed to load bookmarks: \(error)", category: .persistence)
-        }
+        let loaded = await Task.detached(priority: .userInitiated) { [weak self] in
+            guard let self else { return [Article]() }
+            return await self.persistenceManager.load(
+                from: Config.bookmarksFilename,
+                as: [Article].self
+            ) ?? [Article]()
+        }.value
+        
+        // Sort by most recent first
+        bookmarks = loaded.sorted { ($0.savedDate ?? .distantPast) > ($1.savedDate ?? .distantPast) }
+        bookmarkSet = Set(bookmarks.map { $0.url })
+        
+        Logger.debug("✅ Loaded \(bookmarks.count) bookmarks", category: .persistence)
         
         isLoading = false
     }
@@ -127,7 +122,7 @@ final class BookmarkService: ObservableObject {
     
     /// Check if at capacity
     var isAtCapacity: Bool {
-        bookmarks.count >= Config.maxBookmarks
+        false  // NO LIMIT - never at capacity
     }
     
     // Add bookmark
@@ -140,9 +135,7 @@ final class BookmarkService: ObservableObject {
             throw BookmarkError.alreadyBookmarked
         }
         
-        guard bookmarks.count < Config.maxBookmarks else {
-            throw BookmarkError.limitReached(maxBookmarks: Config.maxBookmarks)
-        }
+        // NO LIMIT - unlimited bookmarks allowed
         
         // Add saved date if not present
         var articleToSave = article
@@ -298,7 +291,7 @@ final class BookmarkService: ObservableObject {
             try? await Task.sleep(nanoseconds: UInt64(Config.autoSaveDelay * 1_000_000_000))
             
             guard !Task.isCancelled else { return }
-            await self?.saveBookmarksImmediately()
+            self?.saveBookmarksImmediately()
         }
     }
     
@@ -311,19 +304,12 @@ final class BookmarkService: ObservableObject {
         Task.detached(priority: .utility) { [weak self] in
             guard let self else { return }
             
-            do {
-                await self.persistenceManager.save(self.bookmarks, to: Config.bookmarksFilename)
-                
-                await MainActor.run {
-                    self.lastSaveTime = Date()
-                    let duration = Date().timeIntervalSince(startTime)
-                    Logger.debug("✅ Saved \(self.bookmarks.count) bookmarks in \(String(format: "%.2f", duration))s", category: .persistence)
-                }
-            } catch {
-                await MainActor.run {
-                    self.error = .saveFailed(error)
-                    Logger.error("❌ Failed to save bookmarks: \(error)", category: .persistence)
-                }
+            await self.persistenceManager.save(self.bookmarks, to: Config.bookmarksFilename)
+            
+            await MainActor.run {
+                self.lastSaveTime = Date()
+                let duration = Date().timeIntervalSince(startTime)
+                Logger.debug("✅ Saved \(self.bookmarks.count) bookmarks in \(String(format: "%.2f", duration))s", category: .persistence)
             }
         }
     }
@@ -349,7 +335,7 @@ final class BookmarkService: ObservableObject {
             mostBookmarkedSource: mostBookmarkedSource?.key.name,
             oldestBookmark: bookmarks.map { $0.savedDate ?? .distantPast }.min(),
             newestBookmark: bookmarks.map { $0.savedDate ?? .distantPast }.max(),
-            capacityUsed: Double(bookmarks.count) / Double(Config.maxBookmarks)
+            capacityUsed: 0.0  // NO LIMIT - unlimited bookmarks
         )
     }
 }

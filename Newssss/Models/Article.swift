@@ -18,6 +18,7 @@ public struct Article: Codable, Identifiable, Hashable {
     let urlToImage: String?
     let publishedAt: String
     let content: String?
+    var metadata: [String: String]?
     
     var publishedDate: Date? {
         let formatter = ISO8601DateFormatter()
@@ -37,7 +38,7 @@ public struct Article: Codable, Identifiable, Hashable {
         return formatter.date(from: publishedAt)
     }
     
-    init(source: Source, author: String?, title: String, description: String?, url: String, urlToImage: String?, publishedAt: String, content: String?) {
+    init(source: Source, author: String?, title: String, description: String?, url: String, urlToImage: String?, publishedAt: String, content: String?, metadata: [String: String]? = nil) {
         self.id = UUID()
         self.source = source
         self.author = author
@@ -47,24 +48,54 @@ public struct Article: Codable, Identifiable, Hashable {
         self.urlToImage = urlToImage
         self.publishedAt = publishedAt
         self.content = content
+        self.metadata = metadata
     }
     
     // Custom coding keys for API response
     enum CodingKeys: String, CodingKey {
-        case source, author, title, description, url, urlToImage, publishedAt, content
+        case source, author, title, description, url, urlToImage, publishedAt, publishedDate, content, metadata, category
     }
     
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.id = UUID()
-        self.source = try container.decode(Source.self, forKey: .source)
+        
+        // Handle source as either String or Source object
+        if let sourceString = try? container.decode(String.self, forKey: .source) {
+            // Firebase sends source as a string
+            self.source = Source(id: nil, name: sourceString)
+        } else {
+            // Legacy format or other APIs might send it as an object
+            self.source = try container.decode(Source.self, forKey: .source)
+        }
+        
         self.author = try container.decodeIfPresent(String.self, forKey: .author)
         self.title = try container.decode(String.self, forKey: .title)
         self.description = try container.decodeIfPresent(String.self, forKey: .description)
-        self.url = try container.decode(String.self, forKey: .url)
+        
+        // Handle url as either String or object
+        if let urlString = try? container.decode(String.self, forKey: .url) {
+            self.url = urlString
+        } else if let urlDict = try? container.decode([String: String].self, forKey: .url),
+                  let link = urlDict["href"] ?? urlDict["link"] {
+            self.url = link
+        } else {
+            self.url = ""
+        }
+        
         self.urlToImage = try container.decodeIfPresent(String.self, forKey: .urlToImage)
-        self.publishedAt = try container.decode(String.self, forKey: .publishedAt)
+        
+        // Handle both publishedDate (Firebase) and publishedAt (standard)
+        if let publishedDate = try? container.decode(String.self, forKey: .publishedDate) {
+            self.publishedAt = publishedDate
+        } else if let publishedAt = try? container.decode(String.self, forKey: .publishedAt) {
+            self.publishedAt = publishedAt
+        } else {
+            self.publishedAt = ISO8601DateFormatter().string(from: Date())
+        }
+        
         self.content = try container.decodeIfPresent(String.self, forKey: .content)
+        self.metadata = try container.decodeIfPresent([String: String].self, forKey: .metadata)
     }
     
     public func encode(to encoder: Encoder) throws {
@@ -77,6 +108,7 @@ public struct Article: Codable, Identifiable, Hashable {
         try container.encodeIfPresent(urlToImage, forKey: .urlToImage)
         try container.encode(publishedAt, forKey: .publishedAt)
         try container.encodeIfPresent(content, forKey: .content)
+        try container.encodeIfPresent(metadata, forKey: .metadata)
     }
     
     public func hash(into hasher: inout Hasher) {

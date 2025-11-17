@@ -7,19 +7,19 @@
 
 import Foundation
 
-// Category
+// Category - Ordered by importance and content richness
 enum NewsCategory: String, CaseIterable, Codable {
-    case general
-    case politics
-    case business
-    case technology
-    case entertainment
-    case sports
-    case world
-    case crime
-    case automotive
-    case lifestyle
-    case history
+    case general      // 1. All categories combined (first)
+    case politics     // 2. 9 sources - Most important Italian news
+    case sports       // 3. 7 sources - Very popular in Italy (calcio!)
+    case business     // 4. 8 sources - Economy & finance
+    case technology   // 5. 8 sources - Tech & innovation
+    case world        // 6. 8 sources - International news
+    case entertainment // 7. 7 sources - Cinema, music, TV
+    case crime        // 8. 8 sources - Daily crime & justice
+    case lifestyle    // 9. 8 sources - Food, fashion, travel
+    case automotive   // 10. 7 sources - Cars & motorsport
+    case history      // 11. Personal reading history (last)
     
     var displayName: String {
         return rawValue.capitalized

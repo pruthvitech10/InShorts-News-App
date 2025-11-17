@@ -1,27 +1,32 @@
-// Configuration file for API keys - EXAMPLE TEMPLATE
-// Copy this file to Config.xcconfig and add your real API keys
+// Configuration file - EXAMPLE TEMPLATE
+// Copy this file to Config.xcconfig if you need custom build configurations
 // Config.xcconfig is gitignored and will never be committed
 
-// 🇮🇹 ITALIAN NEWS SOURCES - NO API KEYS NEEDED!
-// ✅ ANSA - Public RSS feed (unlimited, free)
-// ✅ La Repubblica - Public RSS feed (unlimited, free)
-// ✅ Corriere della Sera - Public RSS feed (unlimited, free)
-// ✅ Il Sole 24 Ore - Public RSS feed (unlimited, free)
-// ✅ Il Mattino - Public RSS feed (unlimited, free)
-// ✅ Gazzetta dello Sport - Public RSS feed (unlimited, free)
-// ✅ Corriere dello Sport - Public RSS feed (unlimited, free)
-// ✅ Tuttosport - Public RSS feed (unlimited, free)
+// ========================================
+// NEWS APP - NO API KEYS REQUIRED! 🎉
+// ========================================
 
-// 🌍 INTERNATIONAL SOURCES - NO API KEYS NEEDED!
-// ✅ Reddit - Public API (60 requests/minute, unlimited)
-// ✅ Hacker News - Public API (unlimited requests)
+// ✅ BACKEND: Firebase Cloud Functions
+//    - Fetches from 27 RSS sources (all free, public)
+//    - Generates 30-40 word summaries
+//    - Uploads to Firebase Storage
+//    - Runs every 10 minutes automatically
 
-// ⚠️ OPTIONAL: The Guardian API (Recommended for international news)
-// Free tier: 5,000 requests/day - NO credit card required
-// Get your free API key at: https://open-platform.theguardian.com/access/
-// Leave empty if you don't want Guardian news
-GUARDIAN_API_KEYS = 
+// ✅ iOS APP: Firebase Storage Client
+//    - Fetches JSON from Firebase Storage
+//    - Uses local caching for instant loads
+//    - Works offline
+//    - No API keys needed
 
-// 🎉 THAT'S IT! 
-// 10 sources work without ANY API keys!
-// Guardian is optional but recommended for international perspective.
+// ========================================
+// FIREBASE CONFIGURATION
+// ========================================
+
+// Firebase is configured via GoogleService-Info.plist
+// No additional configuration needed here
+
+// ========================================
+// THAT'S IT! 
+// ========================================
+// Everything works out of the box!
+// Just add GoogleService-Info.plist to your project.
