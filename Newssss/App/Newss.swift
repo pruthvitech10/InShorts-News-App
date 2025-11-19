@@ -107,9 +107,26 @@ struct Newss: App {
 
 struct MainTabView: View {
     @State private var authManager: AuthenticationManager? = nil
+    @AppStorage("userSettings") private var settingsData: Data = Data()
+    
+    private var userSettings: UserSettings {
+        (try? JSONDecoder().decode(UserSettings.self, from: settingsData)) ?? .default
+    }
+    
+    private var preferredColorScheme: ColorScheme? {
+        switch userSettings.theme {
+        case .light:
+            return .light
+        case .dark:
+            return .dark
+        case .system:
+            return nil
+        }
+    }
     
     var body: some View {
         authenticatedView
+            .preferredColorScheme(preferredColorScheme)
     }
     
     private var authenticatedView: some View {

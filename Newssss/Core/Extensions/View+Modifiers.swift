@@ -12,36 +12,57 @@ import SwiftUI
 extension View {
     /// Applies a standard card style with shadow and corner radius
     func cardStyle() -> some View {
-        self
-            .background(Color(.systemBackground))
-            .cornerRadius(AppConstants.cardCornerRadius)
-            .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
+        AdaptiveCardStyle(content: self, shadowOpacity: 0.1, radius: 5)
     }
     
     /// Applies an elevated card style with more prominent shadow
     func elevatedCardStyle() -> some View {
-        self
-            .background(Color(.systemBackground))
-            .cornerRadius(AppConstants.cardCornerRadius)
-            .shadow(color: .black.opacity(0.15), radius: 10, x: 0, y: 5)
+        AdaptiveCardStyle(content: self, shadowOpacity: 0.15, radius: 10, yOffset: 5)
     }
     
     /// Applies a subtle card style with minimal shadow
     func subtleCardStyle() -> some View {
-        self
-            .background(Color(.systemBackground))
-            .cornerRadius(AppConstants.cardCornerRadius)
-            .shadow(color: .black.opacity(0.05), radius: 3, x: 0, y: 1)
+        AdaptiveCardStyle(content: self, shadowOpacity: 0.05, radius: 3, yOffset: 1)
     }
     
     /// Applies a bordered card style without shadow
     func borderedCardStyle(color: Color = .gray.opacity(0.2)) -> some View {
-        self
-            .background(Color(.systemBackground))
+        AdaptiveBorderedCardStyle(content: self, borderColor: color)
+    }
+}
+
+private struct AdaptiveCardStyle<Content: View>: View {
+    @Environment(\.colorScheme) var colorScheme
+    let content: Content
+    let shadowOpacity: Double
+    let radius: CGFloat
+    var yOffset: CGFloat = 2
+    
+    var body: some View {
+        content
+            .background(Color.theme.cardBackground.value(for: colorScheme))
+            .cornerRadius(AppConstants.cardCornerRadius)
+            .shadow(
+                color: (colorScheme == .dark ? Color.white : Color.black).opacity(shadowOpacity),
+                radius: radius,
+                x: 0,
+                y: yOffset
+            )
+    }
+}
+
+private struct AdaptiveBorderedCardStyle<Content: View>: View {
+    @Environment(\.colorScheme) var colorScheme
+    let content: Content
+    let borderColor: Color
+    
+    var body: some View {
+        content
+            .background(Color.theme.cardBackground.value(for: colorScheme))
             .cornerRadius(AppConstants.cardCornerRadius)
             .overlay(
                 RoundedRectangle(cornerRadius: AppConstants.cardCornerRadius)
-                    .stroke(color, lineWidth: 1)
+                    .stroke(Color.theme.border.value(for: colorScheme), lineWidth: 1)
             )
     }
 }

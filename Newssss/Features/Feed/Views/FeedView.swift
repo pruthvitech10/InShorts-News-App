@@ -12,6 +12,7 @@ import SwiftUI
 
 @available(iOS 15.0, *)
 struct FeedView: View {
+    @Environment(\.colorScheme) var colorScheme
     @StateObject private var viewModel = FeedViewModel(selectedCategory: .general)
     @StateObject private var bookmarkService = BookmarkService.shared
     @State private var selectedArticle: Article?
@@ -70,7 +71,7 @@ struct FeedView: View {
                                 }
                                 .padding(.bottom, 8)
                             }
-                            .background(Color(.systemBackground))
+                            .background(Color.theme.background.value(for: colorScheme))
 
                             ZStack {
                                 if !viewModel.articles.isEmpty {
@@ -125,7 +126,7 @@ struct FeedView: View {
                                                 }
                                             }
                                             .padding(24)
-                                            .background(Color(.systemBackground).opacity(0.95))
+                                            .background(Color.theme.cardBackground.value(for: colorScheme).opacity(0.95))
                                             .cornerRadius(16)
                                             .shadow(radius: 10)
                                             Spacer()
