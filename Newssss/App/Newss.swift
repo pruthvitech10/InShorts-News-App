@@ -3,7 +3,6 @@
 //  Newss
 //
 //  Created on 29 October 2025.
-//  Updated on 15 November 2025 - Fixed Firebase initialization.
 //
 
 import SwiftUI
@@ -13,7 +12,6 @@ import GoogleSignIn
 import Combine
 import os.log
 
-// CRITICAL: Global Firebase initialization barrier
 class FirebaseInitializer {
     static let shared = FirebaseInitializer()
     private(set) var isReady = false
@@ -25,59 +23,47 @@ class FirebaseInitializer {
         lock.lock()
         defer { lock.unlock() }
         
-        // Check if already configured
         if isReady {
-            Logger.debug("✅ Firebase already configured", category: .general)
+            Logger.debug("Firebase already configured", category: .general)
             return
         }
         
-        // Check if Firebase config file exists
         guard Bundle.main.path(forResource: "GoogleService-Info", ofType: "plist") != nil else {
-            Logger.debug("⚠️ Firebase config missing (development mode)", category: .general)
+            Logger.debug("Firebase config missing", category: .general)
             return
         }
         
-        // Configure Firebase if not already configured
         if FirebaseApp.app() == nil {
             FirebaseApp.configure()
-            Logger.debug("🔥 Firebase configured successfully", category: .general)
+            Logger.debug("Firebase configured", category: .general)
         }
         
-        // CRITICAL: Set ready flag AFTER configuration completes
         isReady = true
-        Logger.debug("✅ Firebase initialization complete - ready for fetching", category: .general)
+        Logger.debug("Firebase ready", category: .general)
     }
     
     func waitUntilReady(timeout: TimeInterval = 5.0) async -> Bool {
         let start = Date()
         while !isReady {
             if Date().timeIntervalSince(start) > timeout {
-                Logger.debug("⚠️ Firebase initialization timeout", category: .general)
+                Logger.debug("Firebase init timeout", category: .general)
                 return false
             }
-            try? await Task.sleep(nanoseconds: 100_000_000) // 0.1s
+            try? await Task.sleep(nanoseconds: 100_000_000)
         }
         return true
     }
 }
 
-// App Delegate
-
 class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication,
                     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
-        // CRITICAL: Configure Firebase FIRST, IMMEDIATELY
         FirebaseInitializer.shared.configure()
-        
-        // Register background tasks
         BackgroundRefreshService.shared.registerBackgroundTasks()
-        
-        Logger.debug("🔄 Background refresh configured", category: .general)
+        Logger.debug("Background refresh configured", category: .general)
         return true
     }
 }
-
-// Main App
 
 @main
 struct Newss: App {
@@ -86,19 +72,16 @@ struct Newss: App {
     @State private var showSplash = true
     
     init() {
-        // CRITICAL: Start auto-refresh AFTER Firebase is ready
         Task {
-            // Wait for Firebase to be ready
             let ready = await FirebaseInitializer.shared.waitUntilReady()
             if ready {
-                Logger.debug("🚀 Firebase ready - starting auto-refresh", category: .general)
+                Logger.debug("Starting auto-refresh", category: .general)
                 BackgroundRefreshService.shared.startAutoRefresh()
             } else {
-                Logger.debug("❌ Firebase not ready - skipping auto-refresh", category: .general)
+                Logger.debug("Skipping auto-refresh", category: .general)
             }
         }
         
-        // Request location in background (doesn't need Firebase)
         Task {
             LocationService.shared.startUpdatingLocation()
         }

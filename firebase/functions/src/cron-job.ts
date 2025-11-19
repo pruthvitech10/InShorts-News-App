@@ -1,51 +1,34 @@
-/**
- * ========================================
- * CRON JOB - UNIFIED PIPELINE
- * ========================================
- * 
- * Runs every 1 hour
- * Complete all-in-one pipeline
- */
-
 import * as functions from "firebase-functions";
 import {runUnifiedPipeline} from "./unified-pipeline";
 
-/**
- * Scheduled function - runs every 1 hour
- * CRITICAL: 9-minute timeout for processing all categories
- */
 export const newsAggregatorCron = functions
   .runWith({
-    timeoutSeconds: 540, // 9 minutes
+    timeoutSeconds: 540,
     memory: "512MB",
   })
   .pubsub
   .schedule("every 1 hours")
   .timeZone("Europe/Rome")
   .onRun(async (context) => {
-    console.log("⏰ CRON JOB TRIGGERED - Running unified pipeline");
+    console.log("Cron job triggered");
 
     try {
       await runUnifiedPipeline();
-      console.log("✅ Cron job completed successfully");
+      console.log("Cron job completed");
       return null;
     } catch (error) {
-      console.error("❌ Cron job failed:", error);
+      console.error("Cron job failed:", error);
       throw error;
     }
   });
 
-/**
- * Manual trigger for testing
- * CRITICAL: 9-minute timeout for processing all categories
- */
 export const runBackendManual = functions
   .runWith({
-    timeoutSeconds: 540, // 9 minutes
+    timeoutSeconds: 540,
     memory: "512MB",
   })
   .https.onRequest(async (req, res) => {
-    console.log("🔧 MANUAL TRIGGER - Running unified pipeline");
+    console.log("Manual trigger");
 
     try {
       const results = await runUnifiedPipeline();

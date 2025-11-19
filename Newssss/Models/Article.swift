@@ -7,7 +7,6 @@
 
 import Foundation
 
-// Article
 public struct Article: Codable, Identifiable, Hashable {
     public let id: UUID
     let source: Source
@@ -20,10 +19,8 @@ public struct Article: Codable, Identifiable, Hashable {
     let content: String?
     var metadata: [String: String]?
     
-    // PERFORMANCE: Static cache for parsed dates (thread-safe)
     private static var dateCache = NSCache<NSString, NSDate>()
     
-    // Static formatters (reused across all articles for performance)
     private static let isoFormatter: ISO8601DateFormatter = {
         let formatter = ISO8601DateFormatter()
         return formatter
@@ -37,16 +34,13 @@ public struct Article: Codable, Identifiable, Hashable {
     }()
     
     var publishedDate: Date? {
-        // Check cache first
         let cacheKey = publishedAt as NSString
         if let cachedDate = Self.dateCache.object(forKey: cacheKey) {
             return cachedDate as Date
         }
         
-        // Parse date
         var parsedDate: Date?
         
-        // Try ISO8601 formats first (fastest)
         Self.isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         if let date = Self.isoFormatter.date(from: publishedAt) {
             parsedDate = date
@@ -59,7 +53,6 @@ public struct Article: Codable, Identifiable, Hashable {
                 if let date = Self.isoFormatter.date(from: publishedAt) {
                     parsedDate = date
                 } else {
-                    // Try RFC822 format (RSS feeds)
                     Self.rfc822Formatter.dateFormat = "EEE, dd MMM yyyy HH:mm:ss Z"
                     if let date = Self.rfc822Formatter.date(from: publishedAt) {
                         parsedDate = date
@@ -76,7 +69,6 @@ public struct Article: Codable, Identifiable, Hashable {
             }
         }
         
-        // Cache the result
         if let date = parsedDate {
             Self.dateCache.setObject(date as NSDate, forKey: cacheKey)
         }
@@ -97,7 +89,6 @@ public struct Article: Codable, Identifiable, Hashable {
         self.metadata = metadata
     }
     
-    // Custom coding keys for API response
     enum CodingKeys: String, CodingKey {
         case source, author, title, description, url, urlToImage, publishedAt, publishedDate, content, metadata, category
     }
@@ -106,12 +97,9 @@ public struct Article: Codable, Identifiable, Hashable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.id = UUID()
         
-        // Handle source as either String or Source object
         if let sourceString = try? container.decode(String.self, forKey: .source) {
-            // Firebase sends source as a string
             self.source = Source(id: nil, name: sourceString)
         } else {
-            // Legacy format or other APIs might send it as an object
             self.source = try container.decode(Source.self, forKey: .source)
         }
         
@@ -119,7 +107,6 @@ public struct Article: Codable, Identifiable, Hashable {
         self.title = try container.decode(String.self, forKey: .title)
         self.description = try container.decodeIfPresent(String.self, forKey: .description)
         
-        // Handle url as either String or object
         if let urlString = try? container.decode(String.self, forKey: .url) {
             self.url = urlString
         } else if let urlDict = try? container.decode([String: String].self, forKey: .url),
@@ -131,7 +118,6 @@ public struct Article: Codable, Identifiable, Hashable {
         
         self.urlToImage = try container.decodeIfPresent(String.self, forKey: .urlToImage)
         
-        // Handle both publishedDate (Firebase) and publishedAt (standard)
         if let publishedDate = try? container.decode(String.self, forKey: .publishedDate) {
             self.publishedAt = publishedDate
         } else if let publishedAt = try? container.decode(String.self, forKey: .publishedAt) {
@@ -167,7 +153,6 @@ public struct Article: Codable, Identifiable, Hashable {
     }
 }
 
-// Source
 struct Source: Codable, Hashable {
     let id: String?
     let name: String

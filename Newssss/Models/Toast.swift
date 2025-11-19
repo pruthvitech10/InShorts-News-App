@@ -7,16 +7,12 @@
 
 import SwiftUI
 
-// Toast
-
 public struct Toast: Equatable {
     var style: ToastStyle
     var message: String
     var duration: Double = 3
     var isUserInteractionEnabled: Bool = false
 }
-
-// ToastStyle
 
 public enum ToastStyle {
     case error

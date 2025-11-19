@@ -6,9 +6,6 @@
 import Foundation
 import Combine
 
-
-// SupportedCountry
-
 enum SupportedCountry: String, CaseIterable, Codable {
     case italy = "it"
     case unitedStates = "us"
@@ -97,7 +94,6 @@ enum SupportedCountry: String, CaseIterable, Codable {
         }
     }
     
-    // Major cities for location detection
     var majorCities: [String] {
         switch self {
         case .italy:
@@ -117,6 +113,3 @@ enum SupportedCountry: String, CaseIterable, Codable {
         }
     }
 }
-
-// LocationService
-// LocationService is defined in Core/Services/LocationService.swift

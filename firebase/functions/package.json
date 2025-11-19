@@ -1,7 +1,7 @@
 {
   "name": "inshorts-news-functions",
   "version": "1.0.0",
-  "description": "Firebase Cloud Functions for InShorts News App",
+  "description": "Cloud Functions for news aggregation",
   "main": "lib/index.js",
   "scripts": {
     "build": "tsc",

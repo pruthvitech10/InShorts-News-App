@@ -1,34 +1,8 @@
-/**
- * ========================================
- * UNIFIED NEWS PIPELINE - ALL IN ONE
- * ========================================
- * 
- * Complete production-ready pipeline that runs every 1 hour
- * 
- * Features:
- * 1. Fetches articles from 27 RSS sources
- * 2. Extracts full article text
- * 3. Generates 30-40 word summaries
- * 4. Deduplicates by URL
- * 5. Keeps last 24 hours only
- * 6. Categorizes articles (9 categories)
- * 7. Generates JSON per category
- * 8. Uploads to Firebase Storage
- * 9. Verifies with getMetadata()
- * 10. Logs everything clearly
- */
-
 import * as admin from "firebase-admin";
 import axios from "axios";
 import {XMLParser} from "fast-xml-parser";
 import * as cheerio from "cheerio";
 
-// ==================== CONFIGURATION ====================
-
-// RETENTION_HOURS is DISABLED - keeping ALL articles for maximum content
-// const RETENTION_HOURS = 168; // 7 days (24 hours was too restrictive)
-
-// RSS Sources by category - EXPANDED FOR RICHER CONTENT
 const RSS_SOURCES: Record<string, Array<{url: string; name: string}>> = {
   politics: [
     {url: "https://www.ansa.it/sito/notizie/politica/politica_rss.xml", name: "ANSA Politics"},
@@ -133,15 +107,13 @@ const RSS_SOURCES: Record<string, Array<{url: string; name: string}>> = {
   ],
 };
 
-// ==================== TYPES ====================
-
 interface Article {
   title: string;
   url: string;
   summary: string;
   image: string | null;
   published_at: string;
-  source: string; // Publisher name (e.g., "ANSA", "La Repubblica")
+  source: string;
 }
 
 interface CategoryJSON {
@@ -162,8 +134,6 @@ interface PipelineResult {
   error?: string;
 }
 
-// ==================== LOGGER ====================
-
 class Logger {
   private category: string;
 
@@ -172,31 +142,25 @@ class Logger {
   }
 
   step(stepNum: number, message: string) {
-    console.log(`[${this.category}] 📍 STEP ${stepNum}: ${message}`);
+    console.log(`[${this.category}] Step ${stepNum}: ${message}`);
   }
 
   info(message: string) {
-    console.log(`[${this.category}] ℹ️  ${message}`);
+    console.log(`[${this.category}] ${message}`);
   }
 
   success(message: string) {
-    console.log(`[${this.category}] ✅ ${message}`);
+    console.log(`[${this.category}] ${message}`);
   }
 
   error(message: string, error?: any) {
-    console.error(`[${this.category}] ❌ ${message}`);
+    console.error(`[${this.category}] ${message}`);
     if (error) {
-      console.error(`[${this.category}]    ${error.message || error}`);
+      console.error(`[${this.category}] ${error.message || error}`);
     }
   }
 }
 
-// ==================== HTML ENTITY DECODER ====================
-
-/**
- * Decode HTML entities in text
- * Fixes issues like &#8217; (apostrophe), &quot;, &amp;, etc.
- */
 function decodeHTMLEntities(text: string): string {
   if (!text) return text;
   
@@ -210,32 +174,19 @@ function decodeHTMLEntities(text: string): string {
     .replace(/&amp;/g, '&');
 }
 
-/**
- * Clean text for better readability
- * Removes HTML tags, URLs, numbers, and extra whitespace
- */
 function cleanTextForReadability(text: string): string {
   if (!text) return text;
   
   return text
-    // Remove HTML tags
     .replace(/<[^>]*>/g, '')
-    // Remove URLs
     .replace(/https?:\/\/[^\s]+/g, '')
-    // Remove email addresses
     .replace(/[\w.-]+@[\w.-]+\.\w+/g, '')
-    // Remove numbers in brackets or parentheses at start (like "[123]" or "(456)")
     .replace(/^[\[\(]\d+[\]\)]\s*/g, '')
-    // Remove multiple dots
     .replace(/\.{2,}/g, '.')
-    // Remove extra whitespace
     .replace(/\s+/g, ' ')
-    // Fix spacing around punctuation
     .replace(/\s+([.,!?;:])/g, '$1')
     .trim();
 }
-
-// ==================== STEP 1: FETCH ARTICLES ====================
 
 async function fetchArticlesFromRSS(url: string, sourceName: string, logger: Logger): Promise<Article[]> {
   try {
@@ -261,36 +212,25 @@ async function fetchArticlesFromRSS(url: string, sourceName: string, logger: Log
 
     const articles: Article[] = [];
 
-    // NO LIMIT - fetch all articles from RSS feed
     for (const item of itemsArray) {
       const title = item.title || "";
       const articleUrl = item.link?.["@_href"] || item.link || item.guid || "";
       const publishedAt = item.pubDate || item.published || item.updated || new Date().toISOString();
 
-      // Extract image from RSS - try multiple fields
       let image = null;
       
-      // Try media:content
       if (item["media:content"]?.["@_url"]) {
         image = item["media:content"]["@_url"];
-      } 
-      // Try enclosure
-      else if (item.enclosure?.["@_url"]) {
+      } else if (item.enclosure?.["@_url"]) {
         image = item.enclosure["@_url"];
-      } 
-      // Try media:thumbnail
-      else if (item["media:thumbnail"]?.["@_url"]) {
+      } else if (item["media:thumbnail"]?.["@_url"]) {
         image = item["media:thumbnail"]["@_url"];
-      }
-      // Try description for img tags
-      else if (item.description) {
+      } else if (item.description) {
         const imgMatch = item.description.match(/<img[^>]+src="([^">]+)"/);
         if (imgMatch) {
           image = imgMatch[1];
         }
-      }
-      // Try content:encoded for img tags
-      else if (item["content:encoded"]) {
+      } else if (item["content:encoded"]) {
         const imgMatch = item["content:encoded"].match(/<img[^>]+src="([^">]+)"/);
         if (imgMatch) {
           image = imgMatch[1];
@@ -301,10 +241,10 @@ async function fetchArticlesFromRSS(url: string, sourceName: string, logger: Log
         articles.push({
           title: cleanTextForReadability(decodeHTMLEntities(title.trim())),
           url: articleUrl.trim(),
-          summary: "", // Will be filled in step 2
+          summary: "",
           image: image,
           published_at: publishedAt,
-          source: sourceName, // Add publisher name
+          source: sourceName
         });
       }
     }
@@ -314,7 +254,7 @@ async function fetchArticlesFromRSS(url: string, sourceName: string, logger: Log
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
     logger.error(`Failed to fetch from ${sourceName}: ${errorMsg}`);
-    console.error(`❌ RSS Fetch Error [${sourceName}]:`, {
+    console.error(`RSS Fetch Error [${sourceName}]:`, {
       url: url.substring(0, 100),
       error: errorMsg,
       timestamp: new Date().toISOString()
@@ -322,8 +262,6 @@ async function fetchArticlesFromRSS(url: string, sourceName: string, logger: Log
     return [];
   }
 }
-
-// ==================== STEP 2: EXTRACT FULL TEXT & GENERATE SUMMARY ====================
 
 async function extractArticleText(url: string, retries = 2): Promise<{text: string; image: string | null}> {
   for (let attempt = 0; attempt <= retries; attempt++) {
@@ -339,7 +277,6 @@ async function extractArticleText(url: string, retries = 2): Promise<{text: stri
 
       const $ = cheerio.load(response.data);
 
-      // Extract image from article page
       let image: string | null = null;
       const imageSelectors = [
         "meta[property='og:image']",
@@ -359,10 +296,9 @@ async function extractArticleText(url: string, retries = 2): Promise<{text: stri
         }
       }
 
-      // Remove unwanted elements
       $("script, style, nav, header, footer, aside, .ad, .advertisement, .comments").remove();
 
-      // Try common article selectors
+
       const selectors = ["article", ".article-content", ".article-body", ".post-content", ".entry-content", "main", ".content"];
 
       let content = "";
@@ -374,28 +310,25 @@ async function extractArticleText(url: string, retries = 2): Promise<{text: stri
         }
       }
 
-      // Fallback: get all paragraphs
       if (!content || content.length < 100) {
         content = $("p").text();
       }
 
-      // Clean and limit
       const cleanContent = content.replace(/\s+/g, " ").trim().substring(0, 3000);
       
       if (cleanContent.length > 50) {
         return {text: cleanContent, image};
       }
       
-      // Content too short, log warning
-      console.warn(`⚠️  Short content (${cleanContent.length} chars) from ${url.substring(0, 50)}...`);
+      console.warn(`Short content (${cleanContent.length} chars) from ${url.substring(0, 50)}...`);
       return {text: cleanContent, image};
       
     } catch (error) {
       if (attempt < retries) {
-        console.warn(`⚠️  Retry ${attempt + 1}/${retries} for ${url.substring(0, 50)}...`);
-        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1s before retry
+        console.warn(`Retry ${attempt + 1}/${retries} for ${url.substring(0, 50)}...`);
+        await new Promise(resolve => setTimeout(resolve, 1000));
       } else {
-        console.error(`❌ Failed to extract from ${url.substring(0, 50)}...: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        console.error(`Failed to extract from ${url.substring(0, 50)}...: ${error instanceof Error ? error.message : 'Unknown error'}`);
         return {text: "", image: null};
       }
     }
@@ -403,19 +336,14 @@ async function extractArticleText(url: string, retries = 2): Promise<{text: stri
   return {text: "", image: null};
 }
 
-/**
- * Generate smart 30-40 word summary
- * This is the modular summarization function
- */
 function generateSmartSummary(fullText: string): string {
   if (!fullText || fullText.length < 50) {
     return "No summary available.";
   }
 
-  // Decode HTML entities first to clean up symbols
   const decodedText = decodeHTMLEntities(fullText);
 
-  // Split into sentences
+
   const sentences = decodedText
     .split(/[.!?]+/)
     .map((s) => s.trim())
@@ -425,14 +353,11 @@ function generateSmartSummary(fullText: string): string {
     return "No summary available.";
   }
 
-  // Score sentences
   const scored = sentences.map((sentence, index) => {
     const words = sentence.split(/\s+/).filter((w) => w.length > 0);
     
-    // Position score (earlier = more important)
     const positionScore = 1.0 - (index / sentences.length);
     
-    // Length score (prefer 10-30 words)
     let lengthScore = 0.5;
     if (words.length >= 10 && words.length <= 30) {
       lengthScore = 1.0;
@@ -442,7 +367,6 @@ function generateSmartSummary(fullText: string): string {
       lengthScore = 30 / words.length;
     }
     
-    // Keyword score
     const importantWords = ["announced", "revealed", "confirmed", "new", "first", "major", "government", "team", "victory"];
     const keywordScore = importantWords.filter((kw) => sentence.toLowerCase().includes(kw)).length * 0.1;
     
@@ -451,10 +375,9 @@ function generateSmartSummary(fullText: string): string {
     return {sentence, score: totalScore, words: words.length};
   });
 
-  // Sort by score
   scored.sort((a, b) => b.score - a.score);
 
-  // Build summary (30-40 words)
+
   let summary = "";
   let wordCount = 0;
 
@@ -468,17 +391,14 @@ function generateSmartSummary(fullText: string): string {
     }
   }
 
-  // Ensure we have something
   if (!summary) {
     summary = scored[0].sentence + ".";
     wordCount = scored[0].words;
   }
 
-  // Validate and enforce 30-40 word range
   const finalWords = summary.split(/\s+/).filter(w => w.length > 0);
   
   if (finalWords.length < 30) {
-    // Too short - add more sentences
     for (const item of scored.slice(1)) {
       if (wordCount + item.words <= 40) {
         summary += " " + item.sentence + ".";
@@ -487,21 +407,15 @@ function generateSmartSummary(fullText: string): string {
       }
     }
   } else if (finalWords.length > 40) {
-    // Too long - trim to 40 words
     summary = finalWords.slice(0, 40).join(" ") + "...";
   }
 
-  // Final cleanup for readability
   return cleanTextForReadability(summary.trim());
 }
 
-/**
- * Generate publisher favicon/logo URL as fallback
- */
 function getPublisherFavicon(url: string): string {
   try {
     const domain = new URL(url).hostname;
-    // Use Google's favicon service - provides high-quality favicons
     return `https://www.google.com/s2/favicons?domain=${domain}&sz=256`;
   } catch {
     return "";
@@ -509,22 +423,13 @@ function getPublisherFavicon(url: string): string {
 }
 
 async function processArticleWithSummary(article: Article, logger: Logger): Promise<Article> {
-  // Extract full text and image
   const {text: fullText, image: pageImage} = await extractArticleText(article.url);
   
-  // Generate summary
   const summary = generateSmartSummary(fullText || article.title);
   
-  // Multi-level image fallback:
-  // 1. RSS image
-  // 2. Page scraped image
-  // 3. Publisher favicon
-  // 4. Guaranteed placeholder (always valid)
   let finalImage = article.image || pageImage || getPublisherFavicon(article.url);
   
-  // CRITICAL: Ensure we ALWAYS have a valid image URL
   if (!finalImage || finalImage.trim() === "") {
-    // Use a reliable placeholder service
     finalImage = `https://via.placeholder.com/800x450/4A90E2/FFFFFF?text=News`;
   }
   
@@ -535,12 +440,9 @@ async function processArticleWithSummary(article: Article, logger: Logger): Prom
   };
 }
 
-// ==================== STEP 3: DEDUPLICATE & FILTER ====================
-
 function deduplicateArticles(articles: Article[]): Article[] {
   const seen = new Set<string>();
   return articles.filter((article) => {
-    // All articles now have images (real or publisher favicon fallback)
     if (seen.has(article.url)) {
       return false;
     }
@@ -549,31 +451,7 @@ function deduplicateArticles(articles: Article[]): Article[] {
   });
 }
 
-// ==================== STEP 4: TIME FILTER (DISABLED) ====================
-// Time filter is DISABLED to maximize article count (200-400+ per category)
-
-/*
-function filterLast24Hours(articles: Article[]): Article[] {
-  const cutoff = Date.now() - (RETENTION_HOURS * 60 * 60 * 1000);
-  
-  return articles.filter((article) => {
-    try {
-      const time = new Date(article.published_at).getTime();
-      return time > cutoff;
-    } catch {
-      return false;
-    }
-  });
-}
-*/
-
-// ==================== STEP 5: CATEGORIZE (Already done by source) ====================
-// Articles are already categorized by RSS source
-
-// ==================== STEP 6: GENERATE CATEGORY JSON ====================
-
 function generateCategoryJSON(category: string, articles: Article[]): CategoryJSON {
-  // Sort by date (newest first)
   const sorted = articles.sort((a, b) => {
     try {
       return new Date(b.published_at).getTime() - new Date(a.published_at).getTime();
@@ -589,16 +467,13 @@ function generateCategoryJSON(category: string, articles: Article[]): CategoryJS
   };
 }
 
-// ==================== STEP 7 & 8: UPLOAD TO FIREBASE (MERGE WITH EXISTING) ====================
-
 async function uploadToFirebase(category: string, data: CategoryJSON, logger: Logger): Promise<string> {
   try {
-    // Use default bucket (firebasestorage.app)
     const bucket = admin.storage().bucket();
     const fileName = `news/news_${category}.json`;
     const file = bucket.file(fileName);
 
-    // CRITICAL: Download existing articles first and merge
+
     let existingArticles: Article[] = [];
     try {
       const [exists] = await file.exists();
@@ -612,10 +487,9 @@ async function uploadToFirebase(category: string, data: CategoryJSON, logger: Lo
       logger.info(`No existing file, starting fresh`);
     }
 
-    // Merge new + existing articles
     const allArticles = [...data.articles, ...existingArticles];
     
-    // Deduplicate by URL (keep newer version)
+
     const seenUrls = new Map<string, Article>();
     for (const article of allArticles) {
       const existing = seenUrls.get(article.url);
@@ -625,33 +499,29 @@ async function uploadToFirebase(category: string, data: CategoryJSON, logger: Lo
     }
     const mergedArticles = Array.from(seenUrls.values());
     
-    // Sort by date (newest first)
     mergedArticles.sort((a, b) => 
       new Date(b.published_at).getTime() - new Date(a.published_at).getTime()
     );
     
-    // OPTIMIZED: Cap at 350 articles per category for fast mobile performance
-    // 350 articles = ~1MB JSON (vs 800 = ~2MB) = 2x faster download!
     const MAX_ARTICLES = 350;
     let finalArticles = mergedArticles;
     let removedOld = 0;
     
     if (mergedArticles.length > MAX_ARTICLES) {
       removedOld = mergedArticles.length - MAX_ARTICLES;
-      finalArticles = mergedArticles.slice(0, MAX_ARTICLES); // Keep newest 350
-      logger.info(`⚠️ Exceeded ${MAX_ARTICLES} limit - removed ${removedOld} oldest articles`);
+      finalArticles = mergedArticles.slice(0, MAX_ARTICLES);
+      logger.info(`Exceeded ${MAX_ARTICLES} limit - removed ${removedOld} oldest articles`);
     }
     
     logger.success(`Merged: ${data.articles.length} new + ${existingArticles.length} existing = ${finalArticles.length} total (removed ${removedOld} old)`);
 
-    // Create merged JSON
+
     const mergedData: CategoryJSON = {
       category: category,
       updated_at: new Date().toISOString(),
       articles: finalArticles,
     };
 
-    // Upload merged result
     await file.save(JSON.stringify(mergedData, null, 2), {
       contentType: "application/json",
       metadata: {
@@ -659,7 +529,6 @@ async function uploadToFirebase(category: string, data: CategoryJSON, logger: Lo
       },
     });
 
-    // Make public
     await file.makePublic();
 
     const publicUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(fileName)}?alt=media`;
@@ -672,20 +541,15 @@ async function uploadToFirebase(category: string, data: CategoryJSON, logger: Lo
   }
 }
 
-// ==================== STEP 10: VERIFY WITH getMetadata() ====================
-
 async function verifyUpload(category: string, expectedCount: number, logger: Logger): Promise<boolean> {
   try {
-    // Use default bucket (firebasestorage.app)
     const bucket = admin.storage().bucket();
     const file = bucket.file(`news/news_${category}.json`);
 
-    // Get metadata
     const [metadata] = await file.getMetadata();
     
     logger.info(`Metadata - Size: ${metadata.size} bytes, Updated: ${metadata.updated}`);
 
-    // Verify content
     const [data] = await file.download();
     const parsed: CategoryJSON = JSON.parse(data.toString());
 
@@ -702,8 +566,6 @@ async function verifyUpload(category: string, expectedCount: number, logger: Log
   }
 }
 
-// ==================== STEP 11 & 12: MAIN PIPELINE (MODULAR) ====================
-
 async function processCategoryPipeline(
   category: string,
   sources: Array<{url: string; name: string}>,
@@ -712,11 +574,10 @@ async function processCategoryPipeline(
   const logger = new Logger(category);
 
   console.log("\n" + "=".repeat(60));
-  console.log(`🔄 PROCESSING CATEGORY: ${category.toUpperCase()}`);
+  console.log(`Processing category: ${category.toUpperCase()}`);
   console.log("=".repeat(60));
 
   try {
-    // STEP 1: Fetch articles from RSS
     logger.step(1, "Fetching articles from RSS");
     const allArticles: Article[] = [];
     for (const source of sources) {
@@ -725,12 +586,10 @@ async function processCategoryPipeline(
     }
     logger.success(`Fetched ${allArticles.length} total articles`);
 
-    // STEP 2: Deduplicate by URL (BEFORE summary generation to save time)
     logger.step(2, "Deduplicating by URL");
     let unique = deduplicateArticles(allArticles);
     const duplicatesRemoved = allArticles.length - unique.length;
     
-    // Global deduplication across categories
     if (globalSeenUrls) {
       const beforeGlobal = unique.length;
       unique = unique.filter(article => {
@@ -748,16 +607,13 @@ async function processCategoryPipeline(
     
     logger.success(`Removed ${duplicatesRemoved} duplicates`);
 
-    // STEP 3: NO TIME FILTER - Keep ALL articles to maximize content
     logger.step(3, "Keeping all articles (no time filter)");
-    const recent = unique; // Keep ALL articles, don't filter by time
-    const oldRemoved = 0; // Not filtering by time, so 0 removed
+    const recent = unique;
+    const oldRemoved = 0;
     logger.success(`Keeping all ${recent.length} articles`);
 
-    // STEP 4: Extract text and generate summaries (ONLY for unique, recent articles)
     logger.step(4, "Extracting text and generating summaries");
     
-    // Process in batches of 5 to avoid overwhelming servers
     const BATCH_SIZE = 5;
     const articlesWithSummaries: Article[] = [];
     
@@ -768,33 +624,28 @@ async function processCategoryPipeline(
       );
       articlesWithSummaries.push(...batchResults);
       
-      // Log progress
       logger.info(`Processed ${Math.min(i + BATCH_SIZE, recent.length)}/${recent.length} articles`);
     }
     
     logger.success(`Generated ${articlesWithSummaries.length} summaries`);
 
-    // Clear intermediate arrays to free memory
     allArticles.length = 0;
     unique.length = 0;
     recent.length = 0;
 
-    // STEP 5: Generate JSON
+
     logger.step(5, "Generating category JSON");
     const categoryJSON = generateCategoryJSON(category, articlesWithSummaries);
     logger.success(`Generated JSON with ${categoryJSON.articles.length} articles`);
 
-    // STEP 6: Upload to Firebase (replaces old)
     logger.step(6, "Uploading to Firebase Storage");
     const firebaseUrl = await uploadToFirebase(category, categoryJSON, logger);
 
-    // STEP 7: Verify with getMetadata()
     logger.step(7, "Verifying upload with getMetadata()");
     const verified = await verifyUpload(category, categoryJSON.articles.length, logger);
 
-    // STEP 8: Log success
     console.log("\n" + "-".repeat(60));
-    console.log(`✅ SUCCESS: ${category.toUpperCase()}`);
+    console.log(`Success: ${category.toUpperCase()}`);
     console.log(`   Total articles: ${categoryJSON.articles.length}`);
     console.log(`   New articles: ${allArticles.length}`);
     console.log(`   Removed: ${oldRemoved}`);
@@ -816,7 +667,7 @@ async function processCategoryPipeline(
     logger.error("Pipeline failed", error);
 
     console.log("\n" + "-".repeat(60));
-    console.log(`❌ FAILED: ${category.toUpperCase()}`);
+    console.log(`Failed: ${category.toUpperCase()}`);
     console.log(`   Error: ${error instanceof Error ? error.message : String(error)}`);
     console.log("-".repeat(60));
 
@@ -834,37 +685,32 @@ async function processCategoryPipeline(
   }
 }
 
-// ==================== RUN COMPLETE PIPELINE ====================
-
 export async function runUnifiedPipeline(): Promise<PipelineResult[]> {
   console.log("\n" + "=".repeat(60));
-  console.log("🚀 UNIFIED NEWS PIPELINE STARTED");
-  console.log(`⏰ Time: ${new Date().toISOString()}`);
-  console.log(`🔄 Processing ${Object.keys(RSS_SOURCES).length} categories`);
+  console.log("Unified news pipeline started");
+  console.log(`Time: ${new Date().toISOString()}`);
+  console.log(`Processing ${Object.keys(RSS_SOURCES).length} categories`);
   console.log("=".repeat(60));
 
   const startTime = Date.now();
 
-  // Global deduplication tracker to prevent same article in multiple categories
   const globalSeenUrls = new Set<string>();
 
-  // Process all categories sequentially
+
   const results: PipelineResult[] = [];
   for (const [category, sources] of Object.entries(RSS_SOURCES)) {
     const result = await processCategoryPipeline(category, sources, globalSeenUrls);
     results.push(result);
   }
 
-  // ==================== CREATE "GENERAL" CATEGORY (ALL COMBINED) ====================
   console.log("\n" + "=".repeat(60));
-  console.log("📰 CREATING 'GENERAL' CATEGORY (ALL ARTICLES COMBINED)");
+  console.log("Creating 'general' category (all articles combined)");
   console.log("=".repeat(60));
   
   try {
     const generalLogger = new Logger("general");
     const bucket = admin.storage().bucket();
     
-    // Collect all articles from all categories
     const allCategoryArticles: Article[] = [];
     
     for (const [category, _] of Object.entries(RSS_SOURCES)) {
@@ -885,7 +731,6 @@ export async function runUnifiedPipeline(): Promise<PipelineResult[]> {
     
     generalLogger.info(`Collected ${allCategoryArticles.length} total articles from all categories`);
     
-    // Deduplicate by URL
     const seenUrls = new Map<string, Article>();
     for (const article of allCategoryArticles) {
       const existing = seenUrls.get(article.url);
@@ -895,21 +740,18 @@ export async function runUnifiedPipeline(): Promise<PipelineResult[]> {
     }
     const uniqueArticles = Array.from(seenUrls.values());
     
-    // Sort by date (newest first)
     uniqueArticles.sort((a, b) => 
       new Date(b.published_at).getTime() - new Date(a.published_at).getTime()
     );
     
     generalLogger.success(`Deduplicated to ${uniqueArticles.length} unique articles`);
     
-    // Create general category JSON
     const generalJSON: CategoryJSON = {
       category: "general",
       updated_at: new Date().toISOString(),
-      articles: uniqueArticles.slice(0, 800), // Cap at 800 like other categories
+      articles: uniqueArticles.slice(0, 800),
     };
     
-    // Upload to Firebase
     const generalFile = bucket.file("news/news_general.json");
     await generalFile.save(JSON.stringify(generalJSON, null, 2), {
       contentType: "application/json",
@@ -924,7 +766,6 @@ export async function runUnifiedPipeline(): Promise<PipelineResult[]> {
     
     generalLogger.success(`Uploaded general category with ${generalJSON.articles.length} articles`);
     
-    // Add to results
     results.push({
       category: "general",
       success: true,
@@ -936,9 +777,9 @@ export async function runUnifiedPipeline(): Promise<PipelineResult[]> {
       verified: true,
     });
     
-    console.log("✅ General category created successfully");
+    console.log("General category created successfully");
   } catch (error) {
-    console.error("❌ Failed to create general category:", error);
+    console.error("Failed to create general category:", error);
     results.push({
       category: "general",
       success: false,
@@ -952,29 +793,27 @@ export async function runUnifiedPipeline(): Promise<PipelineResult[]> {
     });
   }
 
-  // Final summary
   const successful = results.filter((r) => r.success).length;
   const failed = results.filter((r) => !r.success).length;
   const totalArticles = results.reduce((sum, r) => sum + r.total_articles, 0);
   const duration = ((Date.now() - startTime) / 1000).toFixed(2);
 
   console.log("\n" + "=".repeat(60));
-  console.log("✅ UNIFIED PIPELINE COMPLETE");
-  console.log(`⏱️  Duration: ${duration}s`);
-  console.log(`📊 Successful: ${successful}/${results.length}`);
-  console.log(`❌ Failed: ${failed}`);
-  console.log(`📰 Total articles: ${totalArticles}`);
+  console.log("Unified pipeline complete");
+  console.log(`Duration: ${duration}s`);
+  console.log(`Successful: ${successful}/${results.length}`);
+  console.log(`Failed: ${failed}`);
+  console.log(`Total articles: ${totalArticles}`);
   console.log("=".repeat(60));
 
-  // List all files
-  console.log("\n📂 Uploaded files:");
+  console.log("\nUploaded files:");
   results.forEach((r) => {
     if (r.success) {
-      console.log(`   ✅ ${r.category}.json (${r.total_articles} articles)`);
+      console.log(`   ${r.category}.json (${r.total_articles} articles)`);
       console.log(`      Firebase: ${r.firebase_url}`);
       console.log(`      Verified: ${r.verified ? "YES" : "NO"}`);
     } else {
-      console.log(`   ❌ ${r.category}.json - FAILED: ${r.error}`);
+      console.log(`   ${r.category}.json - FAILED: ${r.error}`);
     }
   });
 
