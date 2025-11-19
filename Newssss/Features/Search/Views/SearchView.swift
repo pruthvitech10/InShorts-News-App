@@ -12,7 +12,7 @@ import SwiftUI
 
 @available(iOS 26.0, *)
 struct SearchView: View {
-    @StateObject private var viewModel = SearchViewModel()
+    @ObservedObject private var viewModel = SearchViewModel.shared
     @State private var searchTask: Task<Void, Never>? = nil
     @Environment(\.dismiss) private var dismiss
     @State private var selectedTab: SearchTab = .myFeed
@@ -395,11 +395,11 @@ struct SearchResultRow: View {
     }
 }
 
-// Breaking news section - DISABLED (service removed)
+// Breaking news section - Shows trending/most viewed articles
 
 struct NotificationsSection: View {
     @ObservedObject var viewModel: SearchViewModel
-    @State private var showAllNotifications = false
+    @State private var showBreakingNewsView = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -427,7 +427,7 @@ struct NotificationsSection: View {
                 Spacer()
 
                 Button(action: {
-                    showAllNotifications = true
+                    showBreakingNewsView = true
                 }) {
                     Text("VIEW ALL")
                         .font(.caption)
@@ -457,7 +457,7 @@ struct NotificationsSection: View {
 
             Button(action: {
                 Task {
-                    await viewModel.loadBreakingNews()
+                    await viewModel.loadBreakingNews(force: true)
                 }
             }) {
                 HStack {
@@ -471,66 +471,87 @@ struct NotificationsSection: View {
         .task {
             await viewModel.loadBreakingNews()
         }
+        .sheet(isPresented: $showBreakingNewsView) {
+            BreakingNewsView()
+        }
     }
 }
 
-// Breaking news row
+// Breaking news row (clickable)
 
 struct BreakingNewsRow: View {
     let article: Article
+    @State private var showingSafari = false
     
     var body: some View {
-        HStack(spacing: 12) {
-            // Article image
-            if let imageURL = article.urlToImage, let url = URL(string: imageURL) {
-                AsyncImage(url: url) { image in
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                } placeholder: {
-                    Rectangle()
-                        .fill(Color.gray.opacity(0.2))
-                }
-                .frame(width: 60, height: 60)
-                .cornerRadius(8)
-            } else {
-                Rectangle()
-                    .fill(Color.gray.opacity(0.2))
+        Button(action: {
+            showingSafari = true
+        }) {
+            HStack(spacing: 12) {
+                // Article image
+                if let imageURL = article.urlToImage, let url = URL(string: imageURL) {
+                    AsyncImage(url: url) { image in
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                    } placeholder: {
+                        Rectangle()
+                            .fill(Color.gray.opacity(0.2))
+                    }
                     .frame(width: 60, height: 60)
                     .cornerRadius(8)
-                    .overlay(
-                        Image(systemName: "newspaper.fill")
-                            .foregroundColor(.gray)
-                    )
-            }
-            
-            // Article info
-            VStack(alignment: .leading, spacing: 4) {
-                Text(article.title)
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                    .lineLimit(2)
+                } else {
+                    Rectangle()
+                        .fill(Color.gray.opacity(0.2))
+                        .frame(width: 60, height: 60)
+                        .cornerRadius(8)
+                        .overlay(
+                            Image(systemName: "newspaper.fill")
+                                .foregroundColor(.gray)
+                        )
+                }
                 
-                HStack(spacing: 4) {
-                    Text(article.source.name ?? "Unknown")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                // Article info
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(article.title)
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.primary)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.leading)
                     
-                    Text("•")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    
-                    if let publishedDate = article.publishedDate {
-                        Text(timeAgo(from: publishedDate))
+                    HStack(spacing: 4) {
+                        Text(article.source.name)
                             .font(.caption)
                             .foregroundColor(.secondary)
+                        
+                        Text("•")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        
+                        if let publishedDate = article.publishedDate {
+                            Text(timeAgo(from: publishedDate))
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
                     }
                 }
+                
+                Spacer()
+                
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
             }
-            
-            Spacer()
+            .padding(.vertical, 8)
         }
-        .padding(.vertical, 8)
+        .buttonStyle(PlainButtonStyle())
+        .fullScreenCover(isPresented: $showingSafari) {
+            if let url = URL(string: article.url) {
+                SafariView(url: url)
+                    .ignoresSafeArea()
+            }
+        }
     }
     
     private func timeAgo(from date: Date) -> String {

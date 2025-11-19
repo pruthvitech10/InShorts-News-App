@@ -20,22 +20,68 @@ public struct Article: Codable, Identifiable, Hashable {
     let content: String?
     var metadata: [String: String]?
     
-    var publishedDate: Date? {
+    // PERFORMANCE: Static cache for parsed dates (thread-safe)
+    private static var dateCache = NSCache<NSString, NSDate>()
+    
+    // Static formatters (reused across all articles for performance)
+    private static let isoFormatter: ISO8601DateFormatter = {
         let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        if let date = formatter.date(from: publishedAt) {
-            return date
+        return formatter
+    }()
+    
+    private static let rfc822Formatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        return formatter
+    }()
+    
+    var publishedDate: Date? {
+        // Check cache first
+        let cacheKey = publishedAt as NSString
+        if let cachedDate = Self.dateCache.object(forKey: cacheKey) {
+            return cachedDate as Date
         }
         
-        // Try without fractional seconds
-        formatter.formatOptions = [.withInternetDateTime]
-        if let date = formatter.date(from: publishedAt) {
-            return date
+        // Parse date
+        var parsedDate: Date?
+        
+        // Try ISO8601 formats first (fastest)
+        Self.isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let date = Self.isoFormatter.date(from: publishedAt) {
+            parsedDate = date
+        } else {
+            Self.isoFormatter.formatOptions = [.withInternetDateTime]
+            if let date = Self.isoFormatter.date(from: publishedAt) {
+                parsedDate = date
+            } else {
+                Self.isoFormatter.formatOptions = [.withInternetDateTime, .withTimeZone]
+                if let date = Self.isoFormatter.date(from: publishedAt) {
+                    parsedDate = date
+                } else {
+                    // Try RFC822 format (RSS feeds)
+                    Self.rfc822Formatter.dateFormat = "EEE, dd MMM yyyy HH:mm:ss Z"
+                    if let date = Self.rfc822Formatter.date(from: publishedAt) {
+                        parsedDate = date
+                    } else {
+                        Self.rfc822Formatter.dateFormat = "EEE, dd MMM yyyy HH:mm:ss"
+                        if let date = Self.rfc822Formatter.date(from: publishedAt) {
+                            parsedDate = date
+                        } else {
+                            Self.rfc822Formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+                            parsedDate = Self.rfc822Formatter.date(from: publishedAt)
+                        }
+                    }
+                }
+            }
         }
         
-        // Try with timezone
-        formatter.formatOptions = [.withInternetDateTime, .withTimeZone]
-        return formatter.date(from: publishedAt)
+        // Cache the result
+        if let date = parsedDate {
+            Self.dateCache.setObject(date as NSDate, forKey: cacheKey)
+        }
+        
+        return parsedDate
     }
     
     init(source: Source, author: String?, title: String, description: String?, url: String, urlToImage: String?, publishedAt: String, content: String?, metadata: [String: String]? = nil) {

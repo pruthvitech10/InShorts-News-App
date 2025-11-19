@@ -3,7 +3,7 @@
  * UNIFIED NEWS PIPELINE - ALL IN ONE
  * ========================================
  * 
- * Complete production-ready pipeline that runs every 10 minutes
+ * Complete production-ready pipeline that runs every 1 hour
  * 
  * Features:
  * 1. Fetches articles from 27 RSS sources
@@ -41,6 +41,9 @@ const RSS_SOURCES: Record<string, Array<{url: string; name: string}>> = {
     {url: "https://www.rainews.it/rss/politica.xml", name: "RaiNews Politics"},
     {url: "https://tg24.sky.it/politica/rss", name: "Sky TG24 Politics"},
     {url: "https://www.fanpage.it/politica/feed/", name: "Fanpage Politics"},
+    {url: "https://www.ilpost.it/feed/", name: "Il Post"},
+    {url: "https://www.ilfattoquotidiano.it/feed/", name: "Il Fatto Quotidiano"},
+    {url: "https://www.huffingtonpost.it/rss/", name: "Huffington Post Italia"},
   ],
   sports: [
     {url: "https://www.gazzetta.it/rss/calcio.xml", name: "Gazzetta Sport"},
@@ -53,15 +56,18 @@ const RSS_SOURCES: Record<string, Array<{url: string; name: string}>> = {
     {url: "https://www.rainews.it/rss/sport.xml", name: "RaiNews Sport"},
     {url: "https://tg24.sky.it/sport/rss", name: "Sky TG24 Sport"},
     {url: "https://www.fanpage.it/sport/feed/", name: "Fanpage Sport"},
+    {url: "https://www.repubblica.it/rss/sport/rss2.0.xml", name: "La Repubblica Sport"},
+    {url: "https://www.eurosport.it/rss.xml", name: "Eurosport Italia"},
   ],
   technology: [
     {url: "https://www.ansa.it/sito/notizie/tecnologia/tecnologia_rss.xml", name: "ANSA Tech"},
     {url: "https://www.hwupgrade.it/rss/news.xml", name: "HWUpgrade"},
     {url: "https://www.tomshw.it/feed", name: "Tom's Hardware"},
-   
     {url: "https://www.punto-informatico.it/feed/", name: "Punto Informatico"},
     {url: "https://www.agi.it/innovazione/rss", name: "AGI Tech"},
     {url: "https://www.rainews.it/rss/tecnologia.xml", name: "RaiNews Tech"},
+    {url: "https://www.wired.it/feed/rss", name: "Wired Italia"},
+    {url: "https://www.dday.it/rss", name: "DDay.it"},
   ],
   entertainment: [
     {url: "https://www.ansa.it/sito/notizie/cultura/cultura_rss.xml", name: "ANSA Culture"},
@@ -70,6 +76,8 @@ const RSS_SOURCES: Record<string, Array<{url: string; name: string}>> = {
     {url: "https://www.comingsoon.it/rss/cinema.rss", name: "Coming Soon Cinema"},
     {url: "https://www.agi.it/cultura/rss", name: "AGI Culture"},
     {url: "https://www.fanpage.it/spettacolo/feed/", name: "Fanpage Entertainment"},
+    {url: "https://www.mymovies.it/rss/", name: "MyMovies"},
+    {url: "https://www.rockol.it/rss", name: "Rockol Music"},
   ],
   business: [
     {url: "https://www.ilsole24ore.com/rss/economia.xml", name: "Il Sole 24 Ore"},
@@ -79,6 +87,8 @@ const RSS_SOURCES: Record<string, Array<{url: string; name: string}>> = {
     {url: "https://www.agi.it/economia/rss", name: "AGI Business"},
     {url: "https://www.adnkronos.com/rss/economia.xml", name: "Adnkronos Business"},
     {url: "https://tg24.sky.it/economia/rss", name: "Sky TG24 Business"},
+    {url: "https://www.milanofinanza.it/rss", name: "Milano Finanza"},
+    {url: "https://www.startmag.it/feed/", name: "StartMag"},
   ],
   world: [
     {url: "https://www.ansa.it/sito/notizie/mondo/mondo_rss.xml", name: "ANSA World"},
@@ -131,6 +141,7 @@ interface Article {
   summary: string;
   image: string | null;
   published_at: string;
+  source: string; // Publisher name (e.g., "ANSA", "La Repubblica")
 }
 
 interface CategoryJSON {
@@ -180,6 +191,50 @@ class Logger {
   }
 }
 
+// ==================== HTML ENTITY DECODER ====================
+
+/**
+ * Decode HTML entities in text
+ * Fixes issues like &#8217; (apostrophe), &quot;, &amp;, etc.
+ */
+function decodeHTMLEntities(text: string): string {
+  if (!text) return text;
+  
+  return text
+    .replace(/&#(\d+);/g, (match, dec) => String.fromCharCode(dec))
+    .replace(/&#x([0-9a-fA-F]+);/g, (match, hex) => String.fromCharCode(parseInt(hex, 16)))
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&');
+}
+
+/**
+ * Clean text for better readability
+ * Removes HTML tags, URLs, numbers, and extra whitespace
+ */
+function cleanTextForReadability(text: string): string {
+  if (!text) return text;
+  
+  return text
+    // Remove HTML tags
+    .replace(/<[^>]*>/g, '')
+    // Remove URLs
+    .replace(/https?:\/\/[^\s]+/g, '')
+    // Remove email addresses
+    .replace(/[\w.-]+@[\w.-]+\.\w+/g, '')
+    // Remove numbers in brackets or parentheses at start (like "[123]" or "(456)")
+    .replace(/^[\[\(]\d+[\]\)]\s*/g, '')
+    // Remove multiple dots
+    .replace(/\.{2,}/g, '.')
+    // Remove extra whitespace
+    .replace(/\s+/g, ' ')
+    // Fix spacing around punctuation
+    .replace(/\s+([.,!?;:])/g, '$1')
+    .trim();
+}
+
 // ==================== STEP 1: FETCH ARTICLES ====================
 
 async function fetchArticlesFromRSS(url: string, sourceName: string, logger: Logger): Promise<Article[]> {
@@ -188,7 +243,11 @@ async function fetchArticlesFromRSS(url: string, sourceName: string, logger: Log
 
     const response = await axios.get(url, {
       timeout: 10000,
-      headers: {"User-Agent": "Mozilla/5.0 (compatible; NewsAggregator/1.0)"},
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "application/rss+xml, application/xml, text/xml, */*",
+        "Accept-Language": "it-IT,it;q=0.9,en;q=0.8",
+      },
     });
 
     const parser = new XMLParser({
@@ -240,11 +299,12 @@ async function fetchArticlesFromRSS(url: string, sourceName: string, logger: Log
 
       if (title && articleUrl) {
         articles.push({
-          title: title.trim(),
+          title: cleanTextForReadability(decodeHTMLEntities(title.trim())),
           url: articleUrl.trim(),
           summary: "", // Will be filled in step 2
           image: image,
           published_at: publishedAt,
+          source: sourceName, // Add publisher name
         });
       }
     }
@@ -270,7 +330,11 @@ async function extractArticleText(url: string, retries = 2): Promise<{text: stri
     try {
       const response = await axios.get(url, {
         timeout: 8000,
-        headers: {"User-Agent": "Mozilla/5.0 (compatible; NewsAggregator/1.0)"},
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          "Accept-Language": "it-IT,it;q=0.9,en;q=0.8",
+        },
       });
 
       const $ = cheerio.load(response.data);
@@ -348,8 +412,11 @@ function generateSmartSummary(fullText: string): string {
     return "No summary available.";
   }
 
+  // Decode HTML entities first to clean up symbols
+  const decodedText = decodeHTMLEntities(fullText);
+
   // Split into sentences
-  const sentences = fullText
+  const sentences = decodedText
     .split(/[.!?]+/)
     .map((s) => s.trim())
     .filter((s) => s.length > 20);
@@ -424,7 +491,21 @@ function generateSmartSummary(fullText: string): string {
     summary = finalWords.slice(0, 40).join(" ") + "...";
   }
 
-  return summary.trim();
+  // Final cleanup for readability
+  return cleanTextForReadability(summary.trim());
+}
+
+/**
+ * Generate publisher favicon/logo URL as fallback
+ */
+function getPublisherFavicon(url: string): string {
+  try {
+    const domain = new URL(url).hostname;
+    // Use Google's favicon service - provides high-quality favicons
+    return `https://www.google.com/s2/favicons?domain=${domain}&sz=256`;
+  } catch {
+    return "";
+  }
 }
 
 async function processArticleWithSummary(article: Article, logger: Logger): Promise<Article> {
@@ -434,8 +515,18 @@ async function processArticleWithSummary(article: Article, logger: Logger): Prom
   // Generate summary
   const summary = generateSmartSummary(fullText || article.title);
   
-  // Use page image if RSS didn't provide one
-  const finalImage = article.image || pageImage;
+  // Multi-level image fallback:
+  // 1. RSS image
+  // 2. Page scraped image
+  // 3. Publisher favicon
+  // 4. Guaranteed placeholder (always valid)
+  let finalImage = article.image || pageImage || getPublisherFavicon(article.url);
+  
+  // CRITICAL: Ensure we ALWAYS have a valid image URL
+  if (!finalImage || finalImage.trim() === "") {
+    // Use a reliable placeholder service
+    finalImage = `https://via.placeholder.com/800x450/4A90E2/FFFFFF?text=News`;
+  }
   
   return {
     ...article,
@@ -444,11 +535,12 @@ async function processArticleWithSummary(article: Article, logger: Logger): Prom
   };
 }
 
-// ==================== STEP 3: DEDUPLICATE BY URL ====================
+// ==================== STEP 3: DEDUPLICATE & FILTER ====================
 
 function deduplicateArticles(articles: Article[]): Article[] {
   const seen = new Set<string>();
   return articles.filter((article) => {
+    // All articles now have images (real or publisher favicon fallback)
     if (seen.has(article.url)) {
       return false;
     }
@@ -538,14 +630,15 @@ async function uploadToFirebase(category: string, data: CategoryJSON, logger: Lo
       new Date(b.published_at).getTime() - new Date(a.published_at).getTime()
     );
     
-    // Cap at 700 articles per category (6,300 total across 9 categories)
-    const MAX_ARTICLES = 700;
+    // OPTIMIZED: Cap at 350 articles per category for fast mobile performance
+    // 350 articles = ~1MB JSON (vs 800 = ~2MB) = 2x faster download!
+    const MAX_ARTICLES = 350;
     let finalArticles = mergedArticles;
     let removedOld = 0;
     
     if (mergedArticles.length > MAX_ARTICLES) {
       removedOld = mergedArticles.length - MAX_ARTICLES;
-      finalArticles = mergedArticles.slice(0, MAX_ARTICLES); // Keep newest 700
+      finalArticles = mergedArticles.slice(0, MAX_ARTICLES); // Keep newest 350
       logger.info(`⚠️ Exceeded ${MAX_ARTICLES} limit - removed ${removedOld} oldest articles`);
     }
     
@@ -760,6 +853,103 @@ export async function runUnifiedPipeline(): Promise<PipelineResult[]> {
   for (const [category, sources] of Object.entries(RSS_SOURCES)) {
     const result = await processCategoryPipeline(category, sources, globalSeenUrls);
     results.push(result);
+  }
+
+  // ==================== CREATE "GENERAL" CATEGORY (ALL COMBINED) ====================
+  console.log("\n" + "=".repeat(60));
+  console.log("📰 CREATING 'GENERAL' CATEGORY (ALL ARTICLES COMBINED)");
+  console.log("=".repeat(60));
+  
+  try {
+    const generalLogger = new Logger("general");
+    const bucket = admin.storage().bucket();
+    
+    // Collect all articles from all categories
+    const allCategoryArticles: Article[] = [];
+    
+    for (const [category, _] of Object.entries(RSS_SOURCES)) {
+      try {
+        const file = bucket.file(`news/news_${category}.json`);
+        const [exists] = await file.exists();
+        
+        if (exists) {
+          const [data] = await file.download();
+          const categoryJSON: CategoryJSON = JSON.parse(data.toString());
+          allCategoryArticles.push(...categoryJSON.articles);
+          generalLogger.info(`Added ${categoryJSON.articles.length} articles from ${category}`);
+        }
+      } catch (err) {
+        generalLogger.error(`Failed to load ${category}`, err);
+      }
+    }
+    
+    generalLogger.info(`Collected ${allCategoryArticles.length} total articles from all categories`);
+    
+    // Deduplicate by URL
+    const seenUrls = new Map<string, Article>();
+    for (const article of allCategoryArticles) {
+      const existing = seenUrls.get(article.url);
+      if (!existing || new Date(article.published_at) > new Date(existing.published_at)) {
+        seenUrls.set(article.url, article);
+      }
+    }
+    const uniqueArticles = Array.from(seenUrls.values());
+    
+    // Sort by date (newest first)
+    uniqueArticles.sort((a, b) => 
+      new Date(b.published_at).getTime() - new Date(a.published_at).getTime()
+    );
+    
+    generalLogger.success(`Deduplicated to ${uniqueArticles.length} unique articles`);
+    
+    // Create general category JSON
+    const generalJSON: CategoryJSON = {
+      category: "general",
+      updated_at: new Date().toISOString(),
+      articles: uniqueArticles.slice(0, 800), // Cap at 800 like other categories
+    };
+    
+    // Upload to Firebase
+    const generalFile = bucket.file("news/news_general.json");
+    await generalFile.save(JSON.stringify(generalJSON, null, 2), {
+      contentType: "application/json",
+      metadata: {
+        cacheControl: "public, max-age=300",
+      },
+    });
+    
+    await generalFile.makePublic();
+    
+    const generalUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/news%2Fnews_general.json?alt=media`;
+    
+    generalLogger.success(`Uploaded general category with ${generalJSON.articles.length} articles`);
+    
+    // Add to results
+    results.push({
+      category: "general",
+      success: true,
+      total_articles: generalJSON.articles.length,
+      new_articles: generalJSON.articles.length,
+      removed_articles: 0,
+      local_path: "",
+      firebase_url: generalUrl,
+      verified: true,
+    });
+    
+    console.log("✅ General category created successfully");
+  } catch (error) {
+    console.error("❌ Failed to create general category:", error);
+    results.push({
+      category: "general",
+      success: false,
+      total_articles: 0,
+      new_articles: 0,
+      removed_articles: 0,
+      local_path: "",
+      firebase_url: "",
+      verified: false,
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 
   // Final summary

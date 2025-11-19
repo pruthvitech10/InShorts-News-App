@@ -19,10 +19,15 @@ enum NewsCategory: String, CaseIterable, Codable {
     case crime        // 8. 8 sources - Daily crime & justice
     case lifestyle    // 9. 8 sources - Food, fashion, travel
     case automotive   // 10. 7 sources - Cars & motorsport
-    case history      // 11. Personal reading history (last)
+    case recentlySeen // 11. Recently seen articles (last)
     
     var displayName: String {
-        return rawValue.capitalized
+        switch self {
+        case .recentlySeen:
+            return "Recently Seen"
+        default:
+            return rawValue.capitalized
+        }
     }
     
     var icon: String {
@@ -47,7 +52,7 @@ enum NewsCategory: String, CaseIterable, Codable {
             return "car"
         case .lifestyle:
             return "fork.knife"
-        case .history:
+        case .recentlySeen:
             return "clock.arrow.circlepath"
         }
     }

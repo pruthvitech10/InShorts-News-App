@@ -133,7 +133,7 @@ struct SwipeableCardView: View {
 
                         // InShorts Summary - 60-80 words (6-7 lines)
                         if let description = article.description {
-                            let summary = createInShortsSummary(from: description)
+                            let summary = createInShortsSummary(from: description.stripHTML())
                             Text(isTranslated ? translatedDescription : summary)
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
@@ -253,7 +253,7 @@ struct SwipeableCardView: View {
         case .automotive: return .orange.opacity(0.8)
         case .lifestyle: return .mint.opacity(0.9)
         case .general: return .gray.opacity(0.9)
-        case .history: return .indigo.opacity(0.9)
+        case .recentlySeen: return .indigo.opacity(0.9)
         }
     }
     

@@ -83,6 +83,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 struct Newss: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
     @StateObject private var localizationManager = LocalizationManager.shared
+    @State private var showSplash = true
     
     init() {
         // CRITICAL: Start auto-refresh AFTER Firebase is ready
@@ -105,8 +106,16 @@ struct Newss: App {
     
     var body: some Scene {
         WindowGroup {
-            MainTabView()
-                .environmentObject(localizationManager)
+            ZStack {
+                MainTabView()
+                    .environmentObject(localizationManager)
+                
+                if showSplash {
+                    SplashScreenView(isActive: $showSplash)
+                        .transition(.opacity)
+                        .zIndex(1)
+                }
+            }
         }
     }
 }

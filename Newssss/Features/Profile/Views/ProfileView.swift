@@ -44,14 +44,8 @@ private struct AuthenticatedView: View {
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 0) {
-                // Location Debug Card
-                LocationDebugCard()
-                    .padding(.horizontal, 20)
-                    .padding(.top, 20)
-                
-            // Profile card
-                // Profile header card
-                VStack(spacing: 20) {
+                // Profile header (no white box)
+                VStack(spacing: 12) {
                     // Avatar with edit button
                     ZStack(alignment: .bottomTrailing) {
                         Avatar(url: user.photoURL, initials: user.initials)
@@ -67,17 +61,17 @@ private struct AuthenticatedView: View {
                                     .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
                                 
                                 Image(systemName: "pencil.circle.fill")
-                                    .font(.system(size: 32))
+                                    .font(.system(size: 28))
                                     .foregroundColor(.blue)
                             }
                         }
-                        .offset(x: 5, y: 5)
+                        .offset(x: 3, y: 3)
                     }
                     
-                    VStack(spacing: 8) {
+                    VStack(spacing: 4) {
                         if let name = user.displayName {
                             Text(name)
-                                .font(.title2)
+                                .font(.title3)
                                 .fontWeight(.bold)
                         }
                         if let email = user.email {
@@ -86,16 +80,9 @@ private struct AuthenticatedView: View {
                                 .foregroundColor(.secondary)
                         }
                     }
-                
-                Spacer()
-            }
-            .padding(.vertical, 32)
-            .padding(.horizontal, 24)
-            .background(Color(.systemBackground))
-            .cornerRadius(20)
-            .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 5)
-            .padding(.horizontal, 20)
-            .padding(.top, 24)
+                }
+                .padding(.top, 8)
+                .padding(.bottom, 16)
             
             // Settings section
             VStack(alignment: .leading, spacing: 0) {
@@ -104,8 +91,8 @@ private struct AuthenticatedView: View {
                     .fontWeight(.semibold)
                     .foregroundColor(.secondary)
                     .padding(.horizontal, 20)
-                    .padding(.top, 32)
-                    .padding(.bottom, 12)
+                    .padding(.top, 24)
+                    .padding(.bottom, 8)
                 
                     VStack(spacing: 0) {
                         NavigationLink(destination: BookmarksView()) {
@@ -133,47 +120,49 @@ private struct AuthenticatedView: View {
                 .padding(.horizontal, 20)
             }
             
-            // Clear History button
-            Button(action: {
-                SeenArticlesService.shared.clearSeenArticles()
-                Logger.debug("🗑️ Cleared all seen articles history", category: .general)
-            }) {
-                HStack(spacing: 8) {
-                    Image(systemName: "clock.arrow.circlepath")
-                        .font(.subheadline)
-                    Text("Clear History (\(SeenArticlesService.shared.getSeenCount()) seen)")
-                        .font(.headline)
+            Spacer(minLength: 20)
+        }
+    }
+    .background(Color(.systemGroupedBackground).ignoresSafeArea())
+    .sheet(isPresented: $showAvatarEditor) {
+        AvatarEditorView(currentPhotoURL: user.photoURL) { image in
+            uploadProfilePhoto(image)
+        }
+    }
+    }
+    
+    private func uploadProfilePhoto(_ image: UIImage) {
+        Task {
+            do {
+                // Compress image
+                guard let imageData = image.jpegData(compressionQuality: 0.7) else {
+                    Logger.error("Failed to compress image", category: .general)
+                    return
                 }
-                .foregroundColor(.orange)
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(Color(.systemGray6))
-                .cornerRadius(12)
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 24)
-            
-            // Sign out button
-            Button(action: onSignOut) {
-                HStack(spacing: 8) {
-                    Image(systemName: "rectangle.portrait.and.arrow.right")
-                        .font(.subheadline)
-                    Text(localizationManager.localized("profile.signOut"))
-                        .font(.headline)
-                }
-                .foregroundColor(.red)
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(Color(.systemGray6))
-                .cornerRadius(12)
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 24)
-            .padding(.bottom, 40)
+                
+                Logger.debug("📸 Uploading profile photo...", category: .general)
+                
+                // Upload to Firebase Storage
+                let photoURL = try await FirebaseAuthenticationManager.shared.uploadProfilePhoto(imageData)
+                
+                Logger.debug("✅ Profile photo uploaded: \(photoURL)", category: .general)
+                
+                // Show success toast
+                ToastManager.shared.show(toast: Toast(
+                    style: .success,
+                    message: "Profile photo updated!",
+                    duration: 2.0
+                ))
+                
+            } catch {
+                Logger.error("❌ Failed to upload photo: \(error)", category: .general)
+                ToastManager.shared.show(toast: Toast(
+                    style: .error,
+                    message: "Failed to upload photo",
+                    duration: 2.0
+                ))
             }
         }
-        .background(Color(.systemGroupedBackground).ignoresSafeArea())
-
     }
 }
 
@@ -271,7 +260,7 @@ private struct Avatar: View {
                 InitialsView(initials: initials)
             }
         }
-        .frame(width: 100, height: 100)
+        .frame(width: 90, height: 90)
         .clipShape(Circle())
         .overlay(Circle().stroke(Color(.systemGray5), lineWidth: 2))
     }
@@ -286,7 +275,7 @@ private struct InitialsView: View {
         ZStack {
             Circle().fill(Color.accentColor.gradient)
             Text(initials)
-                .font(.system(size: 36, weight: .bold))
+                .font(.system(size: 32, weight: .bold))
                 .foregroundColor(.white)
         }
     }
@@ -340,7 +329,7 @@ struct LocationDebugCard: View {
     @State private var showCountryPicker = false
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Image(systemName: "location.circle.fill")
                     .foregroundColor(.blue)
@@ -366,7 +355,8 @@ struct LocationDebugCard: View {
                 .font(.caption)
                 .foregroundColor(.secondary)
         }
-        .padding()
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
         .background(Color(.secondarySystemBackground))
         .cornerRadius(12)
         .sheet(isPresented: $showCountryPicker) {

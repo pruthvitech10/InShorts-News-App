@@ -28,7 +28,7 @@ struct AboutView: View {
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $viewModel.showMailComposer) {
             MailComposeView(
-                recipient: "support@dailynews.app",
+                recipient: "pruthviraj1022004@gmail.com",
                 subject: "DailyNews Support",
                 body: viewModel.supportEmailBody
             )
@@ -240,7 +240,7 @@ final class AboutViewModel: ObservableObject {
             showMailComposer = true
         } else {
             // Fallback to mailto URL
-            if let url = URL(string: "ppunada25@fed.idserve.it") {
+            if let url = URL(string: "mailto:pruthviraj1022004@gmail.com?subject=DailyNews%20Support") {
                 Task { @MainActor in
                     await UIApplication.shared.open(url)
                 }

@@ -8,6 +8,7 @@
 import Foundation
 import FirebaseAuth
 import FirebaseCore
+import FirebaseStorage
 import GoogleSignIn
 import Combine
 import SwiftUI
@@ -174,5 +175,38 @@ final class FirebaseAuthenticationManager: ObservableObject {
             errorMessage = error.localizedDescription
             throw error
         }
+    }
+    
+    // MARK: - Profile Photo Upload
+    
+    func uploadProfilePhoto(_ imageData: Data) async throws -> String {
+        guard let user = Auth.auth().currentUser else {
+            throw NSError(domain: "FirebaseAuth", code: -1, userInfo: [
+                NSLocalizedDescriptionKey: "No user signed in"
+            ])
+        }
+        
+        // Create a unique filename
+        let filename = "\(user.uid)_\(Date().timeIntervalSince1970).jpg"
+        let storageRef = Storage.storage().reference().child("profile_photos").child(filename)
+        
+        // Upload image
+        let metadata = StorageMetadata()
+        metadata.contentType = "image/jpeg"
+        
+        _ = try await storageRef.putDataAsync(imageData, metadata: metadata)
+        
+        // Get download URL
+        let downloadURL = try await storageRef.downloadURL()
+        
+        // Update user profile
+        let changeRequest = user.createProfileChangeRequest()
+        changeRequest.photoURL = downloadURL
+        try await changeRequest.commitChanges()
+        
+        // Update local user
+        updateCurrentUser(user)
+        
+        return downloadURL.absoluteString
     }
 }

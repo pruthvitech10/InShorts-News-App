@@ -3,7 +3,7 @@
  * CRON JOB - UNIFIED PIPELINE
  * ========================================
  * 
- * Runs every 10 minutes
+ * Runs every 1 hour
  * Complete all-in-one pipeline
  */
 
@@ -11,7 +11,7 @@ import * as functions from "firebase-functions";
 import {runUnifiedPipeline} from "./unified-pipeline";
 
 /**
- * Scheduled function - runs every 10 minutes
+ * Scheduled function - runs every 1 hour
  * CRITICAL: 9-minute timeout for processing all categories
  */
 export const newsAggregatorCron = functions
@@ -20,7 +20,7 @@ export const newsAggregatorCron = functions
     memory: "512MB",
   })
   .pubsub
-  .schedule("every 10 minutes")
+  .schedule("every 1 hours")
   .timeZone("Europe/Rome")
   .onRun(async (context) => {
     console.log("⏰ CRON JOB TRIGGERED - Running unified pipeline");

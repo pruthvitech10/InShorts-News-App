@@ -2,11 +2,25 @@ import Foundation
 
 // MARK: - Response Models
 
-/// Firebase Storage response format (matches unified-pipeline.ts)
+/// Pagination info from shuffle endpoint
+struct PaginationInfo: Codable {
+    let page: Int
+    let limit: Int
+    let total_articles: Int
+    let total_pages: Int
+    let has_next: Bool
+    let has_prev: Bool
+}
+
+/// Firebase Shuffle API response format (matches shuffle-endpoint.ts)
 struct FirebaseNewsResponse: Codable {
     let category: String
     let updated_at: String
     let articles: [FirebaseArticle]
+    let shuffled: Bool?           // New: indicates shuffled response
+    let timestamp: String?         // New: when shuffle was performed
+    let total: Int?               // New: total article count (for non-paginated)
+    let pagination: PaginationInfo? // New: pagination info (for paginated endpoint)
 }
 
 /// Article from Firebase (matches backend exactly)
@@ -16,6 +30,7 @@ struct FirebaseArticle: Codable {
     let summary: String        // 30-40 word summary from backend
     let image: String?
     let published_at: String
+    let source: String?        // Publisher name from backend (optional for backward compatibility)
 }
 
 // MARK: - Cache Manager
@@ -61,22 +76,23 @@ class NewsCache {
 
 // MARK: - Firebase News Service
 
-/// Complete Firebase Storage client
+/// Complete Firebase News Service with SHUFFLE
 /// Features:
-/// 1. Fetches from public Firebase Storage URL
+/// 1. Fetches from shuffled API endpoint (different order for each user!)
 /// 2. Backend provides 30-40 word summaries
 /// 3. Local caching for instant loads
 /// 4. Checks updated_at before re-fetching
 /// 5. Parses: title, summary, image, published_at
 /// 6. No duplicates
-/// 7. Offline support
+/// 7. Online Only (Offline disabled)
 /// 8. Extremely fast
+/// 9. SHUFFLE: Each user gets different article order from same 800-article pool
 class FirebaseNewsService {
     static let shared = FirebaseNewsService()
     
     private let cache = NewsCache()
-    // CRITICAL: Use firebasestorage.app where files actually exist
-    private let baseURL = "https://firebasestorage.googleapis.com/v0/b/news-8b080.firebasestorage.app/o/news%2Fnews_"
+    // SHUFFLE ENDPOINT: Each request returns different random order!
+    private let baseURL = "https://us-central1-news-8b080.cloudfunctions.net/getShuffledNewsPaginated?category="
     
     private init() {
         // Only initialize if Firebase is ready
@@ -93,29 +109,31 @@ class FirebaseNewsService {
     func fetchCategory(_ category: String) async throws -> [Article] {
         Logger.debug("📥 Fetching \(category)...", category: .network)
         
-        // STEP 1: Try to download from Firebase
+        // STEP 1: Check internet connection
+        if !NetworkMonitor.shared.isConnected {
+            Logger.debug("❌ No internet connection - blocking fetch", category: .network)
+            throw NSError(domain: "FirebaseNewsService", code: -1, userInfo: [NSLocalizedDescriptionKey: "No internet connection"])
+        }
+
+        // STEP 2: Try to download from Firebase
         do {
             let response = try await downloadFromFirebase(category)
             
-            // STEP 2: Check if cache has same updated_at
+            // STEP 3: Check if cache has same updated_at
             if let cached = cache.get(category: category),
                cached.updated_at == response.updated_at {
                 Logger.debug("✅ Cache is up-to-date, using cached data", category: .network)
                 return convertToArticles(cached.articles)
             }
             
-            // STEP 3: Save new data to cache
+            // STEP 4: Save new data to cache
             cache.save(category: category, response: response)
             Logger.debug("✅ Downloaded \(response.articles.count) articles", category: .network)
             
             return convertToArticles(response.articles)
         } catch {
-            // STEP 4: Offline - use cache
-            if let cached = cache.get(category: category) {
-                Logger.debug("📱 Offline mode: using cache", category: .network)
-                return convertToArticles(cached.articles)
-            }
-            
+            // STEP 5: Error - Do NOT use cache fallback (Online Only)
+            Logger.debug("❌ Fetch failed and offline cache is disabled", category: .network)
             throw error
         }
     }
@@ -151,9 +169,10 @@ class FirebaseNewsService {
     
     // MARK: - Private Helpers
     
-    /// Download from Firebase Storage
+    /// Download from Firebase Shuffle Endpoint
     private func downloadFromFirebase(_ category: String) async throws -> FirebaseNewsResponse {
-        let urlString = "\(baseURL)\(category).json?alt=media"
+        // Fetch 800 shuffled articles in one request
+        let urlString = "\(baseURL)\(category)&page=1&limit=800"
         
         // CRITICAL: Log the exact URL being used
         Logger.debug("🌐 Storage URL: \(urlString)", category: .network)
@@ -186,7 +205,8 @@ class FirebaseNewsService {
             
             let decoder = JSONDecoder()
             let result = try decoder.decode(FirebaseNewsResponse.self, from: data)
-            Logger.debug("✅ Decoded \(result.articles.count) articles for \(category)", category: .network)
+            let shuffleStatus = result.shuffled == true ? "SHUFFLED ✨" : ""
+            Logger.debug("✅ Decoded \(result.articles.count) articles for \(category) \(shuffleStatus)", category: .network)
             return result
             
         } catch let error as DecodingError {
@@ -206,15 +226,16 @@ class FirebaseNewsService {
             
             // Skip articles with no title or URL
             guard !fbArticle.title.isEmpty, !fbArticle.url.isEmpty else {
-                Logger.debug("⚠️ Skipping article with missing title or URL", category: .network)
                 return nil
             }
             
+            // Backend already filters out articles without images
+            // Just use what backend sends
             return Article(
-                source: Source(id: nil, name: "News"),
+                source: Source(id: nil, name: fbArticle.source ?? "News"),
                 author: nil,
                 title: fbArticle.title,
-                description: validSummary,  // Use backend summary with fallback
+                description: validSummary,
                 url: fbArticle.url,
                 urlToImage: fbArticle.image,
                 publishedAt: fbArticle.published_at,

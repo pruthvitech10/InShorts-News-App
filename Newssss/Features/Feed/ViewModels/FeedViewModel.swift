@@ -77,8 +77,8 @@ class FeedViewModel: ObservableObject {
         isLoading = true
         errorMessage = nil
 
-        // History is stored locally, no need to fetch
-        if selectedCategory == .history {
+        // Recently seen is stored locally, no need to fetch
+        if selectedCategory == .recentlySeen {
             articles = SwipeHistoryService.shared.getSwipedArticles()
             canLoadMore = false
             isLoading = false

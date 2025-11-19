@@ -10,17 +10,29 @@ import Combine
 
 @MainActor
 class SearchViewModel: ObservableObject {
+    static let shared = SearchViewModel()
+    
     @Published var query: String = ""
     @Published var results: [Article] = []
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
     @Published var breakingNews: [Article] = []
     @Published var isLoadingBreaking: Bool = false
+    
+    private var hasLoadedBreakingNews = false
 
+    private init() {} // Singleton pattern
+    
     // Uses FirebaseNewsService to fetch from Firebase Storage (backend provides all news)
     
     // Load breaking news (most recent articles from all categories)
-    func loadBreakingNews() async {
+    func loadBreakingNews(force: Bool = false) async {
+        // Skip if already loaded (unless forced refresh)
+        if hasLoadedBreakingNews && !force {
+            Logger.debug("⚡ Breaking news already loaded (\(breakingNews.count) articles)", category: .viewModel)
+            return
+        }
+        
         isLoadingBreaking = true
         
         Logger.debug("📰 Loading breaking news from memory store...", category: .viewModel)
@@ -31,7 +43,7 @@ class SearchViewModel: ObservableObject {
         
         for categoryKey in importantCategories {
             if let categoryArticles = await NewsMemoryStore.shared.getArticles(for: categoryKey) {
-                Logger.debug("� Breaking News: Found \(categoryArticles.count) articles in '\(categoryKey)'", category: .viewModel)
+                Logger.debug("📦 Breaking News: Found \(categoryArticles.count) articles in '\(categoryKey)'", category: .viewModel)
                 allArticles.append(contentsOf: categoryArticles)
             }
         }
@@ -43,11 +55,12 @@ class SearchViewModel: ObservableObject {
         
         breakingNews = Array(sortedArticles.prefix(10))
         isLoadingBreaking = false
+        hasLoadedBreakingNews = true
         
         Logger.debug("✅ Loaded \(breakingNews.count) breaking news articles from \(allArticles.count) total", category: .viewModel)
     }
 
-    // Search through memory store - INSTANT!
+    // Search through ALL articles in Firebase Storage - COMPREHENSIVE!
     func search(useCache: Bool = true) async {
         // Validate first
         let (isValid, error) = ValidationUtil.validateSearchQuery(query)
@@ -61,52 +74,99 @@ class SearchViewModel: ObservableObject {
         isLoading = true
         errorMessage = nil
         
-        Logger.debug("🔍 Searching memory store for: '\(trimmed)'", category: .viewModel)
+        Logger.debug("🔍 Searching for: '\(trimmed)'", category: .viewModel)
         
-        // Search through ALL categories in memory store
-        var allArticles: [Article] = []
+        // All available categories
         let categories = ["general", "politics", "business", "technology", "entertainment", "sports", "world", "crime", "automotive", "lifestyle"]
         
+        var allArticles: [Article] = []
+        var missingCategories: [String] = []
+        
+        // STEP 1: Check which categories are already in memory
         for categoryKey in categories {
             if let categoryArticles = await NewsMemoryStore.shared.getArticles(for: categoryKey) {
-                Logger.debug("📦 Found \(categoryArticles.count) articles in '\(categoryKey)' category", category: .viewModel)
+                Logger.debug("📦 Found \(categoryArticles.count) articles in '\(categoryKey)' (cached)", category: .viewModel)
                 allArticles.append(contentsOf: categoryArticles)
             } else {
-                Logger.debug("⚠️ No articles in '\(categoryKey)' category", category: .viewModel)
+                Logger.debug("⚠️ '\(categoryKey)' not cached - will fetch from Firebase", category: .viewModel)
+                missingCategories.append(categoryKey)
             }
         }
         
-        // If memory is empty, wait for auto-refresh
-        if allArticles.isEmpty {
-            Logger.debug("📡 Memory empty, waiting for auto-refresh...", category: .viewModel)
+        // STEP 2: Fetch missing categories from Firebase Storage
+        if !missingCategories.isEmpty && NetworkMonitor.shared.isConnected {
+            Logger.debug("📡 Fetching \(missingCategories.count) missing categories from Firebase...", category: .viewModel)
             
-            // Show message to user
-            errorMessage = "Loading articles... Please wait for auto-refresh."
+            do {
+                // Fetch all missing categories in parallel
+                let fetchedArticles = try await withThrowingTaskGroup(of: (String, [Article]).self) { group in
+                    for category in missingCategories {
+                        group.addTask {
+                            let articles = try await FirebaseNewsService.shared.fetchCategory(category)
+                            return (category, articles)
+                        }
+                    }
+                    
+                    var results: [String: [Article]] = [:]
+                    for try await (category, articles) in group {
+                        results[category] = articles
+                    }
+                    return results
+                }
+                
+                // Store fetched categories in memory for future searches
+                await MainActor.run {
+                    for (category, articles) in fetchedArticles {
+                        NewsMemoryStore.shared.store(articles: articles, for: category)
+                        allArticles.append(contentsOf: articles)
+                        Logger.debug("✅ Fetched \(articles.count) articles for '\(category)'", category: .viewModel)
+                    }
+                }
+                
+            } catch {
+                Logger.error("❌ Failed to fetch missing categories: \(error)", category: .viewModel)
+                // Continue with whatever we have cached
+            }
+        }
+        
+        // STEP 3: If still no articles, show error
+        if allArticles.isEmpty {
+            Logger.debug("📡 No articles available - check internet connection", category: .viewModel)
+            errorMessage = "No articles available. Please check your internet connection."
             isLoading = false
             return
         }
         
-        Logger.debug("📊 Searching through \(allArticles.count) articles", category: .viewModel)
+        Logger.debug("📊 Searching through \(allArticles.count) articles across all categories", category: .viewModel)
         
-        // Filter articles matching search query
+        // STEP 4: Filter articles matching search query
         let matchingArticles = allArticles.filter { article in
             let titleMatch = article.title.lowercased().contains(trimmed)
             let descriptionMatch = article.description?.lowercased().contains(trimmed) ?? false
             let contentMatch = article.content?.lowercased().contains(trimmed) ?? false
-            return titleMatch || descriptionMatch || contentMatch
+            let sourceMatch = article.source.name.lowercased().contains(trimmed)
+            return titleMatch || descriptionMatch || contentMatch || sourceMatch
         }
         
-        // Sort by date (most recent first)
-        results = matchingArticles.sorted {
-            ($0.publishedDate ?? .distantPast) > ($1.publishedDate ?? .distantPast)
+        // STEP 5: Sort by relevance (title matches first) then by date
+        results = matchingArticles.sorted { article1, article2 in
+            let title1Match = article1.title.lowercased().contains(trimmed)
+            let title2Match = article2.title.lowercased().contains(trimmed)
+            
+            // Prioritize title matches
+            if title1Match && !title2Match {
+                return true
+            } else if !title1Match && title2Match {
+                return false
+            }
+            
+            // Then sort by date
+            return (article1.publishedDate ?? .distantPast) > (article2.publishedDate ?? .distantPast)
         }
         
         isLoading = false
         
         Logger.debug("✅ Found \(results.count) matching articles for '\(query)'", category: .viewModel)
-        
-        // Don't set error message if no results - just show empty state
-        // errorMessage is only for actual errors (network, etc.)
     }
 
     // Helper: Filter articles published in the last 48 hours
