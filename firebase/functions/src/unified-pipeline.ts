@@ -336,12 +336,35 @@ async function extractArticleText(url: string, retries = 2): Promise<{text: stri
   return {text: "", image: null};
 }
 
-function generateSmartSummary(fullText: string): string {
+async function generateSmartSummary(fullText: string): Promise<string> {
   if (!fullText || fullText.length < 50) {
     return "No summary available.";
   }
 
   const decodedText = decodeHTMLEntities(fullText);
+  
+  try {
+    const response = await axios.post('https://api-inference.huggingface.co/models/facebook/bart-large-cnn', {
+      inputs: decodedText.substring(0, 1024),
+      parameters: {
+        max_length: 60,
+        min_length: 30,
+        do_sample: false
+      }
+    }, {
+      headers: {
+        'Authorization': `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      timeout: 10000
+    });
+
+    if (response.data && response.data[0] && response.data[0].summary_text) {
+      return cleanTextForReadability(response.data[0].summary_text);
+    }
+  } catch (error) {
+    // Silent fallback
+  }
 
 
   const sentences = decodedText
@@ -425,7 +448,7 @@ function getPublisherFavicon(url: string): string {
 async function processArticleWithSummary(article: Article, logger: Logger): Promise<Article> {
   const {text: fullText, image: pageImage} = await extractArticleText(article.url);
   
-  const summary = generateSmartSummary(fullText || article.title);
+  const summary = await generateSmartSummary(fullText || article.title);
   
   let finalImage = article.image || pageImage || getPublisherFavicon(article.url);
   
