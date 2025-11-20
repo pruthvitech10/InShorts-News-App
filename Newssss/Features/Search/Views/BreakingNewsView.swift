@@ -10,14 +10,14 @@ import Combine
 
 @available(iOS 26.0, *)
 struct BreakingNewsView: View {
-    @StateObject private var viewModel = BreakingNewsViewModel()
+    @ObservedObject var viewModel = SearchViewModel.shared
     @Environment(\.dismiss) private var dismiss
     
     var body: some View {
         NavigationView {
             ScrollView {
                 VStack(spacing: 0) {
-                    if viewModel.isLoading {
+                    if viewModel.isLoadingBreaking {
                         VStack {
                             Spacer()
                             ProgressView()
@@ -87,9 +87,6 @@ struct BreakingNewsView: View {
                 }
             }
             .background(Color(.systemBackground))
-        }
-        .task {
-            await viewModel.loadBreakingNews()
         }
     }
 }

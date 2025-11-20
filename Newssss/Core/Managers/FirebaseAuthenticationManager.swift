@@ -315,8 +315,14 @@ final class FirebaseAuthenticationManager: ObservableObject {
         changeRequest.photoURL = downloadURL
         try await changeRequest.commitChanges()
         
-        // Update local user
-        updateCurrentUser(user)
+        // Reload user to get updated profile
+        try await user.reload()
+        
+        // Update local user with fresh data
+        if let refreshedUser = Auth.auth().currentUser {
+            updateCurrentUser(refreshedUser)
+            Logger.debug("✅ Profile photo updated in local cache", category: .general)
+        }
         
         return downloadURL.absoluteString
     }

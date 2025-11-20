@@ -219,21 +219,38 @@ async function fetchArticlesFromRSS(url: string, sourceName: string, logger: Log
 
       let image = null;
       
+      // Try multiple RSS image sources
       if (item["media:content"]?.["@_url"]) {
         image = item["media:content"]["@_url"];
       } else if (item.enclosure?.["@_url"]) {
         image = item.enclosure["@_url"];
       } else if (item["media:thumbnail"]?.["@_url"]) {
         image = item["media:thumbnail"]["@_url"];
+      } else if (item.image) {
+        // Some feeds have direct image field
+        image = typeof item.image === 'string' ? item.image : item.image?.url || item.image?.["@_url"];
+      } else if (item.thumbnail) {
+        image = typeof item.thumbnail === 'string' ? item.thumbnail : item.thumbnail?.url || item.thumbnail?.["@_url"];
       } else if (item.description) {
-        const imgMatch = item.description.match(/<img[^>]+src="([^">]+)"/);
+        // Try to extract from description HTML
+        const imgMatch = item.description.match(/<img[^>]+src=["']([^"'>]+)["']/);
         if (imgMatch) {
           image = imgMatch[1];
         }
       } else if (item["content:encoded"]) {
-        const imgMatch = item["content:encoded"].match(/<img[^>]+src="([^">]+)"/);
+        // Try to extract from content:encoded HTML
+        const imgMatch = item["content:encoded"].match(/<img[^>]+src=["']([^"'>]+)["']/);
         if (imgMatch) {
           image = imgMatch[1];
+        }
+      }
+      
+      // Clean up image URL (remove query params that might break loading)
+      if (image && typeof image === 'string') {
+        image = image.trim();
+        // Ensure it's a valid URL
+        if (!image.startsWith('http')) {
+          image = null;
         }
       }
 
@@ -281,18 +298,41 @@ async function extractArticleText(url: string, retries = 2): Promise<{text: stri
       const imageSelectors = [
         "meta[property='og:image']",
         "meta[name='twitter:image']",
+        "meta[property='og:image:secure_url']",
+        "link[rel='image_src']",
         "article img",
         ".article-image img",
         ".featured-image img",
+        ".wp-post-image",
+        ".entry-content img",
+        ".post-thumbnail img",
         "img[class*='article']",
-        "img[class*='hero']"
+        "img[class*='hero']",
+        "img[class*='featured']",
+        "img[class*='cover']",
+        "figure img",
+        ".main-image img",
+        "#main-image"
       ];
       
       for (const selector of imageSelectors) {
         const element = $(selector).first();
         if (element.length > 0) {
-          image = element.attr("content") || element.attr("src") || null;
-          if (image) break;
+          image = element.attr("content") || element.attr("src") || element.attr("data-src") || element.attr("href") || null;
+          if (image) {
+            // Clean and validate image URL
+            image = image.trim();
+            if (image.startsWith('//')) {
+              image = 'https:' + image;
+            } else if (image.startsWith('/')) {
+              // Relative URL - skip for now
+              image = null;
+              continue;
+            }
+            if (image && image.startsWith('http')) {
+              break;
+            }
+          }
         }
       }
 

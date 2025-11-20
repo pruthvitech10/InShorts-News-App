@@ -250,11 +250,20 @@ private struct Avatar: View {
     
     var body: some View {
         Group {
-            if let url = url, let imgUrl = URL(string: url) {
-                AsyncImage(url: imgUrl) { img in
-                    img.resizable().scaledToFill()
-                } placeholder: {
-                    InitialsView(initials: initials)
+            if let url = url, !url.isEmpty, let imgUrl = URL(string: url) {
+                AsyncImage(url: imgUrl) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .scaledToFill()
+                    case .empty:
+                        InitialsView(initials: initials)
+                    case .failure:
+                        InitialsView(initials: initials)
+                    @unknown default:
+                        InitialsView(initials: initials)
+                    }
                 }
             } else {
                 InitialsView(initials: initials)
@@ -263,6 +272,7 @@ private struct Avatar: View {
         .frame(width: 90, height: 90)
         .clipShape(Circle())
         .overlay(Circle().stroke(Color(.systemGray5), lineWidth: 2))
+        .id(url ?? "no-photo") // Force refresh when URL changes
     }
 }
 

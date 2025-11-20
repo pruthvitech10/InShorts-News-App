@@ -8,6 +8,7 @@
 import SwiftUI
 import FirebaseCore
 import FirebaseAuth
+import AuthenticationServices
 
 struct ProfileTabView: View {
     @State private var isSignedIn = false
@@ -48,10 +49,40 @@ struct ProfileTabView: View {
         VStack(spacing: 30) {
             Spacer()
             
-            // App Icon
-            Image(systemName: "newspaper.circle.fill")
-                .font(.system(size: 80))
-                .foregroundColor(.blue)
+            // App Icon - Your actual app icon
+            ZStack {
+                // Blue globe background matching your icon
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            colors: [Color(hex: "#5B9BD5"), Color(hex: "#3E82C7")],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 100, height: 100)
+                
+                // Globe grid pattern
+                Image(systemName: "globe")
+                    .font(.system(size: 50, weight: .light))
+                    .foregroundColor(.white.opacity(0.8))
+                
+                // Document overlay (right side)
+                HStack {
+                    Spacer()
+                    Circle()
+                        .fill(.white)
+                        .frame(width: 55, height: 55)
+                        .overlay(
+                            Image(systemName: "doc.text.fill")
+                                .font(.system(size: 24))
+                                .foregroundColor(Color(hex: "#FFB84D"))
+                        )
+                        .offset(x: 10, y: 0)
+                }
+                .frame(width: 100)
+            }
+            .shadow(color: .black.opacity(0.2), radius: 10, x: 0, y: 5)
             
             // Title
             Text("Welcome to InShorts")
@@ -68,6 +99,24 @@ struct ProfileTabView: View {
             
             // Sign-in buttons
             VStack(spacing: 16) {
+                // Apple Sign In Button
+                SignInWithAppleButton(
+                    .signIn,
+                    onRequest: { request in
+                        let nonce = AuthenticationManager.shared.generateNonce()
+                        request.requestedScopes = [.fullName, .email]
+                        request.nonce = AuthenticationManager.shared.sha256(nonce)
+                    },
+                    onCompletion: { result in
+                        signInWithApple(result: result)
+                    }
+                )
+                .signInWithAppleButtonStyle(.black)
+                .frame(height: 50)
+                .cornerRadius(12)
+                .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
+                .disabled(isLoading)
+                
                 // Google Sign-In Button
                 Button(action: {
                     signInWithGoogle()
@@ -160,6 +209,32 @@ struct ProfileTabView: View {
             } catch {
                 await MainActor.run {
                     errorMessage = "Sign-in failed. Please try again."
+                    showError = true
+                    isLoading = false
+                }
+            }
+        }
+    }
+    
+    private func signInWithApple(result: Result<ASAuthorization, Error>) {
+        isLoading = true
+        showError = false
+        
+        Task {
+            do {
+                switch result {
+                case .success(let authorization):
+                    try await AuthenticationManager.shared.signInWithApple(authorization: authorization)
+                    await MainActor.run {
+                        isSignedIn = true
+                        isLoading = false
+                    }
+                case .failure(let error):
+                    throw error
+                }
+            } catch {
+                await MainActor.run {
+                    errorMessage = "Apple Sign-in failed. Please try again."
                     showError = true
                     isLoading = false
                 }

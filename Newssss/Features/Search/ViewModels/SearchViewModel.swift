@@ -48,8 +48,12 @@ class SearchViewModel: ObservableObject {
             }
         }
         
+        // Deduplicate by URL first
+        let uniqueArticles = deduplicateByURL(allArticles)
+        Logger.debug("🔄 Deduplicated: \(allArticles.count) → \(uniqueArticles.count) articles", category: .viewModel)
+        
         // Sort by date and take top 10 most recent
-        let sortedArticles = allArticles.sorted {
+        let sortedArticles = uniqueArticles.sorted {
             ($0.publishedDate ?? .distantPast) > ($1.publishedDate ?? .distantPast)
         }
         
