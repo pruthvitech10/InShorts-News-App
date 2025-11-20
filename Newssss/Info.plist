@@ -52,6 +52,8 @@
     <string>InShorts needs access to your camera to take profile photos.</string>
     <key>NSPhotoLibraryUsageDescription</key>
     <string>InShorts needs access to your photo library to select profile photos.</string>
+    <key>NSPhotoLibraryAddUsageDescription</key>
+    <string>InShorts needs access to save your profile photo.</string>
     <key>NSAppTransportSecurity</key>
     <dict>
         <key>NSExceptionDomains</key>

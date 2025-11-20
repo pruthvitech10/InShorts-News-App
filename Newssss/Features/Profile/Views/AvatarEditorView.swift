@@ -1,10 +1,3 @@
-//
-//  AvatarEditorView.swift
-//  Newssss
-//
-//  Photo picker for profile avatar with camera and gallery support
-//
-
 import SwiftUI
 import PhotosUI
 
@@ -157,11 +150,48 @@ struct AvatarEditorView: View {
                     }
                 }
             }
-            .onChange(of: selectedItem) { newItem in
+            .onChange(of: selectedItem) { oldValue, newValue in
                 Task {
-                    if let data = try? await newItem?.loadTransferable(type: Data.self),
-                       let image = UIImage(data: data) {
-                        selectedImage = image
+                    do {
+                        guard let newValue = newValue else { 
+                            print("❌ No item selected")
+                            return 
+                        }
+                        
+                        print("📷 Loading image from gallery...")
+                        
+                        guard let data = try await newValue.loadTransferable(type: Data.self) else {
+                            print("❌ Failed to load data")
+                            await MainActor.run {
+                                errorMessage = "Failed to load image data"
+                                showError = true
+                            }
+                            return
+                        }
+                        
+                        print("✅ Data loaded: \(data.count) bytes")
+                        
+                        guard let image = UIImage(data: data) else {
+                            print("❌ Failed to create UIImage from data")
+                            await MainActor.run {
+                                errorMessage = "Failed to process image"
+                                showError = true
+                            }
+                            return
+                        }
+                        
+                        print("✅ Image created: \(image.size)")
+                        
+                        await MainActor.run {
+                            selectedImage = image
+                            print("✅ Image displayed successfully")
+                        }
+                    } catch {
+                        print("❌ Error loading image: \(error.localizedDescription)")
+                        await MainActor.run {
+                            errorMessage = "Error: \(error.localizedDescription)"
+                            showError = true
+                        }
                     }
                 }
             }

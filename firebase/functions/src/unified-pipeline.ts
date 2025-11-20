@@ -267,7 +267,7 @@ async function extractArticleText(url: string, retries = 2): Promise<{text: stri
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
       const response = await axios.get(url, {
-        timeout: 8000,
+        timeout: 5000,
         headers: {
           "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
           "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
@@ -324,9 +324,18 @@ async function extractArticleText(url: string, retries = 2): Promise<{text: stri
       return {text: cleanContent, image};
       
     } catch (error) {
+      // Skip retries for 403/401 errors (access denied)
+      const isAuthError = error instanceof Error && 
+        (error.message.includes('403') || error.message.includes('401') || error.message.includes('status code 403'));
+      
+      if (isAuthError) {
+        console.warn(`Access denied for ${url.substring(0, 50)}... - skipping`);
+        return {text: "", image: null};
+      }
+      
       if (attempt < retries) {
         console.warn(`Retry ${attempt + 1}/${retries} for ${url.substring(0, 50)}...`);
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 500)); // Reduced from 1000ms
       } else {
         console.error(`Failed to extract from ${url.substring(0, 50)}...: ${error instanceof Error ? error.message : 'Unknown error'}`);
         return {text: "", image: null};
@@ -637,7 +646,7 @@ async function processCategoryPipeline(
 
     logger.step(4, "Extracting text and generating summaries");
     
-    const BATCH_SIZE = 5;
+    const BATCH_SIZE = 10;
     const articlesWithSummaries: Article[] = [];
     
     for (let i = 0; i < recent.length; i += BATCH_SIZE) {

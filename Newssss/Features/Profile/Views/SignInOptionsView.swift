@@ -1,11 +1,5 @@
-//
-//  SignInOptionsView.swift
-//  ShortsNewsClone
-//
-//  Created on 29 October 2025.
-//
-
 import SwiftUI
+import AuthenticationServices
 
 
 // Sign in options screen
@@ -36,6 +30,24 @@ struct SignInOptionsView: View {
                 Spacer().frame(height: 40)
 
                 VStack(spacing: 16) {
+                    // Apple Sign In Button
+                    SignInWithAppleButton(
+                        .signIn,
+                        onRequest: { request in
+                            let nonce = authManager.generateNonce()
+                            request.requestedScopes = [.fullName, .email]
+                            request.nonce = authManager.sha256(nonce)
+                        },
+                        onCompletion: { result in
+                            performAppleSignIn(result: result)
+                        }
+                    )
+                    .signInWithAppleButtonStyle(.black)
+                    .frame(height: 50)
+                    .cornerRadius(8)
+                    .shadow(color: Color.black.opacity(0.12), radius: 2, x: 0, y: 1)
+                    .disabled(isSigningIn)
+                    
                     SignInButton(
                         title: "Sign in with Google",
                         background: Color.white,
@@ -86,6 +98,30 @@ struct SignInOptionsView: View {
         }
     }
 
+    private func performAppleSignIn(result: Result<ASAuthorization, Error>) {
+        isSigningIn = true
+        errorMessage = nil
+        
+        Task {
+            do {
+                switch result {
+                case .success(let authorization):
+                    try await authManager.signInWithApple(authorization: authorization)
+                    await MainActor.run {
+                        dismiss()
+                    }
+                case .failure(let error):
+                    throw error
+                }
+            } catch {
+                await MainActor.run {
+                    errorMessage = "Failed to sign in: \(error.localizedDescription)"
+                    isSigningIn = false
+                }
+            }
+        }
+    }
+    
     private func performGoogleSignIn() {
         isSigningIn = true
         errorMessage = nil

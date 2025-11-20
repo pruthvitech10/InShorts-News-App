@@ -4,10 +4,10 @@ import {runUnifiedPipeline} from "./unified-pipeline";
 export const newsAggregatorCron = functions
   .runWith({
     timeoutSeconds: 540,
-    memory: "512MB",
+    memory: "1GB",
   })
   .pubsub
-  .schedule("every 1 hours")
+  .schedule("every 2 hours")
   .timeZone("Europe/Rome")
   .onRun(async (context) => {
     console.log("Cron job triggered");

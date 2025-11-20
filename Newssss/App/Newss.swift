@@ -1,10 +1,3 @@
-//
-//  Newss.swift
-//  Newss
-//
-//  Created on 29 October 2025.
-//
-
 import SwiftUI
 import FirebaseCore
 import FirebaseAuth
@@ -108,6 +101,7 @@ struct Newss: App {
 struct MainTabView: View {
     @State private var authManager: AuthenticationManager? = nil
     @AppStorage("userSettings") private var settingsData: Data = Data()
+    @State private var selectedTab = 0
     
     private var userSettings: UserSettings {
         (try? JSONDecoder().decode(UserSettings.self, from: settingsData)) ?? .default
@@ -130,34 +124,58 @@ struct MainTabView: View {
     }
     
     private var authenticatedView: some View {
-        TabView {
+        TabView(selection: $selectedTab) {
             NavigationStack {
                 FeedView()
             }
             .tabItem {
-                Label("Feed", systemImage: "newspaper")
+                CustomTabItem(
+                    icon: "doc.text.fill",
+                    title: "Feed",
+                    isSelected: selectedTab == 0
+                )
             }
+            .tag(0)
             
             NavigationStack {
                 SearchView()
             }
             .tabItem {
-                Label("Search", systemImage: "magnifyingglass")
+                CustomTabItem(
+                    icon: "magnifyingglass",
+                    title: "Search",
+                    isSelected: selectedTab == 1
+                )
             }
+            .tag(1)
             
             NavigationStack {
                 BookmarksView()
             }
             .tabItem {
-                Label("Saved", systemImage: "bookmark")
+                CustomTabItem(
+                    icon: "bookmark.fill",
+                    title: "Saved",
+                    isSelected: selectedTab == 2
+                )
             }
+            .tag(2)
             
             NavigationStack {
                 ProfileTabView()
             }
             .tabItem {
-                Label("Profile", systemImage: "person")
+                CustomTabItem(
+                    icon: "person.circle.fill",
+                    title: "Profile",
+                    isSelected: selectedTab == 3
+                )
             }
+            .tag(3)
+        }
+        .tint(Color(hex: "#FF6B35"))
+        .onAppear {
+            setupTabBarAppearance()
         }
     }
     
@@ -193,6 +211,71 @@ struct MainTabView: View {
             .padding(.horizontal, 40)
         }
         .padding()
+    }
+    
+    private func setupTabBarAppearance() {
+        let appearance = UITabBarAppearance()
+        appearance.configureWithOpaqueBackground()
+        
+        // Background color
+        appearance.backgroundColor = UIColor.systemBackground
+        
+        // Shadow for depth
+        appearance.shadowColor = UIColor.black.withAlphaComponent(0.1)
+        appearance.shadowImage = UIImage()
+        
+        // Selected item color (orange)
+        let selectedColor = UIColor(red: 1.0, green: 0.42, blue: 0.21, alpha: 1.0)
+        let unselectedColor = UIColor.systemGray
+        
+        // Normal state
+        appearance.stackedLayoutAppearance.normal.iconColor = unselectedColor
+        appearance.stackedLayoutAppearance.normal.titleTextAttributes = [
+            .foregroundColor: unselectedColor,
+            .font: UIFont.systemFont(ofSize: 11, weight: .medium)
+        ]
+        
+        // Selected state
+        appearance.stackedLayoutAppearance.selected.iconColor = selectedColor
+        appearance.stackedLayoutAppearance.selected.titleTextAttributes = [
+            .foregroundColor: selectedColor,
+            .font: UIFont.systemFont(ofSize: 11, weight: .semibold)
+        ]
+        
+        // Inline appearance (for compact layouts)
+        appearance.inlineLayoutAppearance.normal.iconColor = unselectedColor
+        appearance.inlineLayoutAppearance.normal.titleTextAttributes = [
+            .foregroundColor: unselectedColor
+        ]
+        appearance.inlineLayoutAppearance.selected.iconColor = selectedColor
+        appearance.inlineLayoutAppearance.selected.titleTextAttributes = [
+            .foregroundColor: selectedColor
+        ]
+        
+        // Compact appearance
+        appearance.compactInlineLayoutAppearance.normal.iconColor = unselectedColor
+        appearance.compactInlineLayoutAppearance.selected.iconColor = selectedColor
+        
+        UITabBar.appearance().standardAppearance = appearance
+        UITabBar.appearance().scrollEdgeAppearance = appearance
+    }
+}
+
+// Custom Tab Item
+struct CustomTabItem: View {
+    let icon: String
+    let title: String
+    let isSelected: Bool
+    
+    var body: some View {
+        VStack(spacing: 4) {
+            Image(systemName: icon)
+                .font(.system(size: 24, weight: isSelected ? .semibold : .regular))
+                .symbolEffect(.bounce, value: isSelected)
+            
+            Text(title)
+                .font(.system(size: 11, weight: isSelected ? .semibold : .medium))
+        }
     }
 }
 

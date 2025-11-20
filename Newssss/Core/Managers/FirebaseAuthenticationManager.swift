@@ -1,10 +1,3 @@
-//
-//  FirebaseAuthenticationManager.swift
-//  Newssss
-//
-//  Firebase authentication with Google Sign-In
-//
-
 import Foundation
 import FirebaseAuth
 import FirebaseCore
@@ -12,6 +5,8 @@ import FirebaseStorage
 import GoogleSignIn
 import Combine
 import SwiftUI
+import AuthenticationServices
+import CryptoKit
 
 @MainActor
 final class FirebaseAuthenticationManager: ObservableObject {
@@ -23,6 +18,9 @@ final class FirebaseAuthenticationManager: ObservableObject {
     @Published var errorMessage: String?
     
     private var authStateListener: AuthStateDidChangeListenerHandle?
+    
+    // Apple Sign In - Store the nonce for verification
+    private var currentNonce: String?
     
     private init() {
         setupAuthStateListener()
@@ -120,6 +118,119 @@ final class FirebaseAuthenticationManager: ObservableObject {
             errorMessage = error.localizedDescription
             throw error
         }
+    }
+    
+    // MARK: - Apple Sign In
+    
+    func signInWithApple(authorization: ASAuthorization) async throws {
+        isLoading = true
+        errorMessage = nil
+        
+        defer { isLoading = false }
+        
+        guard let appleIDCredential = authorization.credential as? ASAuthorizationAppleIDCredential else {
+            let error = NSError(domain: "FirebaseAuth", code: -1, userInfo: [
+                NSLocalizedDescriptionKey: "Invalid Apple ID credentials"
+            ])
+            errorMessage = error.localizedDescription
+            throw error
+        }
+        
+        guard let nonce = currentNonce else {
+            let error = NSError(domain: "FirebaseAuth", code: -1, userInfo: [
+                NSLocalizedDescriptionKey: "Invalid state: A login callback was received, but no login request was sent."
+            ])
+            errorMessage = error.localizedDescription
+            throw error
+        }
+        
+        guard let appleIDToken = appleIDCredential.identityToken else {
+            let error = NSError(domain: "FirebaseAuth", code: -1, userInfo: [
+                NSLocalizedDescriptionKey: "Unable to fetch identity token"
+            ])
+            errorMessage = error.localizedDescription
+            throw error
+        }
+        
+        guard let idTokenString = String(data: appleIDToken, encoding: .utf8) else {
+            let error = NSError(domain: "FirebaseAuth", code: -1, userInfo: [
+                NSLocalizedDescriptionKey: "Unable to serialize token string from data"
+            ])
+            errorMessage = error.localizedDescription
+            throw error
+        }
+        
+        // Initialize an OAuth credential with the Apple ID token
+        let credential = OAuthProvider.appleCredential(
+            withIDToken: idTokenString,
+            rawNonce: nonce,
+            fullName: appleIDCredential.fullName
+        )
+        
+        do {
+            // Sign in with Firebase
+            let authResult = try await Auth.auth().signIn(with: credential)
+            
+            // Update display name if this is a new user and we have a name
+            if let fullName = appleIDCredential.fullName,
+               let givenName = fullName.givenName,
+               authResult.user.displayName == nil {
+                let changeRequest = authResult.user.createProfileChangeRequest()
+                
+                var displayName = givenName
+                if let familyName = fullName.familyName {
+                    displayName += " \(familyName)"
+                }
+                changeRequest.displayName = displayName
+                
+                try? await changeRequest.commitChanges()
+            }
+            
+            updateCurrentUser(authResult.user)
+            Logger.debug("✅ Apple Sign-In successful: \(authResult.user.displayName ?? authResult.user.uid)", category: .general)
+            
+        } catch {
+            Logger.error("❌ Apple Sign-In failed: \(error.localizedDescription)", category: .general)
+            errorMessage = error.localizedDescription
+            throw error
+        }
+    }
+    
+    // Generate a random nonce for Apple Sign In security
+    func generateNonce() -> String {
+        let nonce = randomNonceString()
+        currentNonce = nonce
+        return nonce
+    }
+    
+    // Helper to generate random nonce
+    private func randomNonceString(length: Int = 32) -> String {
+        precondition(length > 0)
+        var randomBytes = [UInt8](repeating: 0, count: length)
+        let errorCode = SecRandomCopyBytes(kSecRandomDefault, randomBytes.count, &randomBytes)
+        if errorCode != errSecSuccess {
+            fatalError("Unable to generate nonce. SecRandomCopyBytes failed with OSStatus \(errorCode)")
+        }
+        
+        let charset: [Character] =
+        Array("0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._")
+        
+        let nonce = randomBytes.map { byte in
+            charset[Int(byte) % charset.count]
+        }
+        
+        return String(nonce)
+    }
+    
+    // SHA256 hash for the nonce
+    func sha256(_ input: String) -> String {
+        let inputData = Data(input.utf8)
+        let hashedData = SHA256.hash(data: inputData)
+        let hashString = hashedData.compactMap {
+            String(format: "%02x", $0)
+        }.joined()
+        
+        return hashString
     }
     
     // MARK: - Anonymous Sign In
