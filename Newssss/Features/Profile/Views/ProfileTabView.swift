@@ -46,136 +46,117 @@ struct ProfileTabView: View {
     }
     
     private var signInView: some View {
-        VStack(spacing: 30) {
-            Spacer()
+        ZStack {
+            // Gradient background
+            LinearGradient(
+                colors: [Color(hex: "#FF6B35").opacity(0.05), Color.white],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
             
-            // App Icon - Your actual app icon
-            ZStack {
-                // Blue globe background matching your icon
-                Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: [Color(hex: "#5B9BD5"), Color(hex: "#3E82C7")],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
+            VStack(spacing: 0) {
+                Spacer()
+                
+                // App Icon and Name
+                VStack(spacing: 20) {
+                    Image("AppIconDisplay")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 120, height: 120)
+                        .clipShape(RoundedRectangle(cornerRadius: 26))
+                        .shadow(color: Color(hex: "#FF6B35").opacity(0.3), radius: 20, x: 0, y: 10)
+                    
+                    Text("InShorts")
+                        .font(.system(size: 36, weight: .bold, design: .rounded))
+                        .foregroundColor(.primary)
+                    
+                    Text("Stay informed in 60 words")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+                .padding(.bottom, 60)
+                
+                // Sign-in buttons
+                VStack(spacing: 14) {
+                    // Apple Sign In Button
+                    SignInWithAppleButton(
+                        .signIn,
+                        onRequest: { request in
+                            let nonce = AuthenticationManager.shared.generateNonce()
+                            request.requestedScopes = [.fullName, .email]
+                            request.nonce = AuthenticationManager.shared.sha256(nonce)
+                        },
+                        onCompletion: { result in
+                            signInWithApple(result: result)
+                        }
                     )
-                    .frame(width: 100, height: 100)
-                
-                // Globe grid pattern
-                Image(systemName: "globe")
-                    .font(.system(size: 50, weight: .light))
-                    .foregroundColor(.white.opacity(0.8))
-                
-                // Document overlay (right side)
-                HStack {
-                    Spacer()
-                    Circle()
-                        .fill(.white)
-                        .frame(width: 55, height: 55)
+                    .signInWithAppleButtonStyle(.black)
+                    .frame(height: 56)
+                    .cornerRadius(16)
+                    .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 4)
+                    .disabled(isLoading)
+                    
+                    // Google Sign-In Button
+                    Button(action: {
+                        signInWithGoogle()
+                    }) {
+                        HStack(spacing: 12) {
+                            Image(systemName: "g.circle.fill")
+                                .font(.title2)
+                                .foregroundColor(.red)
+                            Text("Sign in with Google")
+                                .font(.system(size: 17, weight: .semibold))
+                                .foregroundColor(.primary)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 56)
+                        .background(Color(.systemBackground))
                         .overlay(
-                            Image(systemName: "doc.text.fill")
-                                .font(.system(size: 24))
-                                .foregroundColor(Color(hex: "#FFB84D"))
+                            RoundedRectangle(cornerRadius: 16)
+                                .stroke(Color(.systemGray4), lineWidth: 1)
                         )
-                        .offset(x: 10, y: 0)
-                }
-                .frame(width: 100)
-            }
-            .shadow(color: .black.opacity(0.2), radius: 10, x: 0, y: 5)
-            
-            // Title
-            Text("Welcome to InShorts")
-                .font(.title)
-                .fontWeight(.bold)
-            
-            Text("Sign in to sync your preferences across devices")
-                .font(.body)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 40)
-            
-            Spacer()
-            
-            // Sign-in buttons
-            VStack(spacing: 16) {
-                // Apple Sign In Button
-                SignInWithAppleButton(
-                    .signIn,
-                    onRequest: { request in
-                        let nonce = AuthenticationManager.shared.generateNonce()
-                        request.requestedScopes = [.fullName, .email]
-                        request.nonce = AuthenticationManager.shared.sha256(nonce)
-                    },
-                    onCompletion: { result in
-                        signInWithApple(result: result)
+                        .cornerRadius(16)
+                        .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 4)
                     }
-                )
-                .signInWithAppleButtonStyle(.black)
-                .frame(height: 50)
-                .cornerRadius(12)
-                .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
-                .disabled(isLoading)
-                
-                // Google Sign-In Button
-                Button(action: {
-                    signInWithGoogle()
-                }) {
-                    HStack {
-                        Image(systemName: "g.circle.fill")
-                            .font(.title2)
-                        Text("Sign in with Google")
-                            .fontWeight(.semibold)
+                    .disabled(isLoading)
+                    
+                    // Guest Button
+                    Button(action: {
+                        continueAsGuest()
+                    }) {
+                        HStack(spacing: 12) {
+                            Image(systemName: "arrow.right.circle.fill")
+                                .font(.title2)
+                            Text("Continue as Guest")
+                                .font(.system(size: 17, weight: .semibold))
+                        }
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 56)
+                        .background(
+                            LinearGradient(
+                                colors: [Color(hex: "#FF6B35"), Color(hex: "#FF8C61")],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .foregroundColor(.white)
+                        .cornerRadius(16)
+                        .shadow(color: Color(hex: "#FF6B35").opacity(0.4), radius: 8, x: 0, y: 4)
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.white)
-                    .foregroundColor(.black)
-                    .cornerRadius(12)
-                    .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
-                }
-                .disabled(isLoading)
-                
-                // Guest Button
-                Button(action: {
-                    continueAsGuest()
-                }) {
-                    HStack {
-                        Image(systemName: "person.fill")
-                            .font(.title2)
-                        Text("Continue as Guest")
-                            .fontWeight(.semibold)
+                    .disabled(isLoading)
+                    
+                    if isLoading {
+                        ProgressView()
+                            .tint(Color(hex: "#FF6B35"))
+                            .padding(.top, 8)
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(12)
                 }
-                .disabled(isLoading)
+                .padding(.horizontal, 24)
                 
-                if isLoading {
-                    ProgressView()
-                        .padding(.top, 10)
-                }
-                
-                if showError {
-                    Text(errorMessage)
-                        .font(.caption)
-                        .foregroundColor(.red)
-                        .padding(.top, 10)
-                }
+                Spacer()
+                Spacer()
             }
-            .padding(.horizontal, 40)
-            
-            // Features
-            VStack(alignment: .leading, spacing: 12) {
-                FeatureRow(icon: "bookmark.fill", text: "Save your favorite articles")
-                FeatureRow(icon: "clock.fill", text: "Track your reading history")
-                FeatureRow(icon: "sparkles", text: "Get personalized recommendations")
-            }
-            .font(.subheadline)
-            .foregroundColor(.secondary)
             .padding(.horizontal, 40)
             .padding(.top, 20)
             

@@ -28,6 +28,7 @@ struct ProfileView: View {
             )
             .navigationTitle(localizationManager.localized("profile.title"))
             .navigationBarTitleDisplayMode(.large)
+            .id(authManager.currentUser?.photoURL ?? "no-user") // Force refresh when photo changes
         }
     }
 }
@@ -46,27 +47,8 @@ private struct AuthenticatedView: View {
             VStack(spacing: 0) {
                 // Profile header (no white box)
                 VStack(spacing: 12) {
-                    // Avatar with edit button
-                    ZStack(alignment: .bottomTrailing) {
-                        Avatar(url: user.photoURL, initials: user.initials)
-                        
-                        // Edit button
-                        Button(action: {
-                            showAvatarEditor = true
-                        }) {
-                            ZStack {
-                                Circle()
-                                    .fill(Color(.systemBackground))
-                                    .frame(width: 36, height: 36)
-                                    .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
-                                
-                                Image(systemName: "pencil.circle.fill")
-                                    .font(.system(size: 28))
-                                    .foregroundColor(.blue)
-                            }
-                        }
-                        .offset(x: 3, y: 3)
-                    }
+                    // Avatar (no edit button)
+                    Avatar(url: user.photoURL, initials: user.initials)
                     
                     VStack(spacing: 4) {
                         if let name = user.displayName {

@@ -571,17 +571,29 @@ async function uploadToFirebase(category: string, data: CategoryJSON, logger: Lo
     }
     const mergedArticles = Array.from(seenUrls.values());
     
-    mergedArticles.sort((a, b) => 
+    // Filter articles to only include those from last 72 hours (3 days)
+    const now = new Date().getTime();
+    const seventyTwoHoursAgo = now - (72 * 60 * 60 * 1000);
+    const recentArticles = mergedArticles.filter(article => {
+      try {
+        const publishedTime = new Date(article.published_at).getTime();
+        return publishedTime >= seventyTwoHoursAgo;
+      } catch {
+        return false;
+      }
+    });
+    
+    recentArticles.sort((a, b) => 
       new Date(b.published_at).getTime() - new Date(a.published_at).getTime()
     );
     
     const MAX_ARTICLES = 350;
-    let finalArticles = mergedArticles;
+    let finalArticles = recentArticles;
     let removedOld = 0;
     
-    if (mergedArticles.length > MAX_ARTICLES) {
-      removedOld = mergedArticles.length - MAX_ARTICLES;
-      finalArticles = mergedArticles.slice(0, MAX_ARTICLES);
+    if (recentArticles.length > MAX_ARTICLES) {
+      removedOld = recentArticles.length - MAX_ARTICLES;
+      finalArticles = recentArticles.slice(0, MAX_ARTICLES);
       logger.info(`Exceeded ${MAX_ARTICLES} limit - removed ${removedOld} oldest articles`);
     }
     
@@ -812,16 +824,28 @@ export async function runUnifiedPipeline(): Promise<PipelineResult[]> {
     }
     const uniqueArticles = Array.from(seenUrls.values());
     
-    uniqueArticles.sort((a, b) => 
+    // Filter articles to only include those from last 72 hours (3 days)
+    const now = new Date().getTime();
+    const seventyTwoHoursAgo = now - (72 * 60 * 60 * 1000);
+    const recentArticles = uniqueArticles.filter(article => {
+      try {
+        const publishedTime = new Date(article.published_at).getTime();
+        return publishedTime >= seventyTwoHoursAgo;
+      } catch {
+        return false;
+      }
+    });
+    
+    recentArticles.sort((a, b) => 
       new Date(b.published_at).getTime() - new Date(a.published_at).getTime()
     );
     
-    generalLogger.success(`Deduplicated to ${uniqueArticles.length} unique articles`);
+    generalLogger.success(`Filtered to ${recentArticles.length} articles from last 72 hours (from ${uniqueArticles.length} total)`);
     
     const generalJSON: CategoryJSON = {
       category: "general",
       updated_at: new Date().toISOString(),
-      articles: uniqueArticles.slice(0, 800),
+      articles: recentArticles.slice(0, 800),
     };
     
     const generalFile = bucket.file("news/news_general.json");
